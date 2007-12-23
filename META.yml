@@ -1,0 +1,19 @@
+# http://module-build.sourceforge.net/META-spec.html
+#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
+name:         CSS-DOM
+version:      0.01
+version_from: lib/CSS/DOM.pm
+installdirs:  site
+requires:
+    constant:                      1.03
+    CSS:                           1
+    CSS::Adaptor:                  1
+    CSS::Style:                    1
+    Exporter:                      5.57
+    Scalar::Util:                  1.08
+    strict:                        0
+    Test::More:                    0
+    warnings:                      0
+
+distribution_type: module
+generated_by: ExtUtils::MakeMaker version 6.30

@@ -1,0 +1,51 @@
+CSS::DOM, version 0.01 (beta)
+
+This module implements a CSS-specific subset of the interfaces
+described in the W3C DOM specification.
+
+
+INSTALLATION
+
+The easiest way to install this module is to use the CPAN module or
+the cpan script:
+
+    perl -MCPAN -e "install CSS::DOM"
+
+    cpan CSS::DOM
+
+Or you can use the following:
+
+    perl Makefile.PL
+    make
+    make test
+    [sudo] make install
+
+
+DEPENDENCIES
+
+This module requires perl 5.6.0 or later, and the following modules:
+
+• CSS.pm version 1 or later
+• Scalar::Util
+• Exporter 5.57 or later
+• constant 1.03 or later
+
+
+DOCUMENTATION
+
+After installing, you can find documentation for these modules with
+the perldoc command.
+
+    perldoc CSS::DOM
+
+Or try using man (it's faster, in my experience):
+
+    man CSS::DOM
+
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2007 Father Chrysostomos
+
+This program is free software; you may redistribute it and/or modify
+it under the same terms as perl.
