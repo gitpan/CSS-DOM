@@ -6,6 +6,7 @@ lib/CSS/DOM.pm
 lib/CSS/DOM/Array.pm
 lib/CSS/DOM/Exception.pm
 lib/CSS/DOM/Interface.pm
+lib/CSS/DOM/MediaList.pm
 lib/CSS/DOM/Rule/Style.pm
 #lib/CSS/DOM/Rule/Media.pm
 #lib/CSS/DOM/Rule/FontFace.pm
@@ -16,6 +17,7 @@ lib/CSS/DOM/Rule/Style.pm
 lib/CSS/DOM/Rule.pm
 lib/CSS/DOM/RuleList.pm
 lib/CSS/DOM/StyleDecl.pm
+lib/CSS/DOM/StyleSheetList.pm
 #lib/CSS/DOM/Value.pm
 #lib/CSS/DOM/Value/Primitive.pm
 #lib/CSS/DOM/Value/List.pm

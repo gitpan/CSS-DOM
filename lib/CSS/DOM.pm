@@ -1,14 +1,16 @@
 package CSS::DOM;
 
-use 5.006;
+use 5.008;
 
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 use   # to keep CPANTS happy :-)
    strict;
 use   # same here
    warnings;
 
+use CSS::DOM::Exception
+	'SYNTAX_ERR' ,'HIERARCHY_REQUEST_ERR', 'INDEX_SIZE_ERR';
 use Scalar::Util 'weaken';
 
 require CSS;
@@ -44,7 +46,9 @@ sub purge { for (shift) {
 }}
 
 
-# DOM stuff:
+# DOM STUFF:
+
+# StyleSheet interface:
 
 sub type { 'text/css' }
 sub disabled {
@@ -57,22 +61,63 @@ sub set_ownerNode { weaken($_[0]->{_CSS_DOM_owner} = $_[1]) }
 sub parentStyleSheet { } # ~~~ Still to be implemented. Who sets this?
 sub href { shift->{_CSS_DOM_href} }
 sub set_href { $_[0]->{_CSS_DOM_href} = $_[1] }
+sub title { no warnings 'uninitialized';
+           ''.(shift->ownerNode || return)->attr('title') }
+sub media {
+	wantarray ? @{$_[0]->{_CSS_DOM_media}||return} :
+		($_[0]->{_CSS_DOM_media} ||= (
+			require CSS::DOM::MediaList,
+			CSS::DOM::MediaList->new
+		))
+}
 
-# ~~~ title
-# ~~~ media
 
-# ~~~ ownerRule
+# CSSStyleSheet interface:
+
+sub ownerRule {
+	shift->{_CSS_DOM_owner} || ()
+}
+sub _set_ownerRule {
+	weaken($_[0]->{_CSS_DOM_owner} = $_[1]);
+}
 
 sub cssRules { wantarray ? @{shift->{styles}} : shift->{styles}; }
 
-# ~~~ insertRule
+sub insertRule { # ~~~ This needs to raise an HIERARCHY_REQUEST_ERR if the
+                 #     rule cannot be inserted at  the  specified  index;
+                 #     e.g., if an @import rule is inserted after a stan-
+                 #     dard rule.
+	my ($self, $rule_string, $index) = @_;
+	
+	my $css_obj = new CSS::DOM;
+	eval {
+		$css_obj ->read_string($rule_string);
+		1
+	} or die CSS::DOM::Exception->new(SYNTAX_ERR, $@);
 
-# ~~~ deleteRule
+	my $list = $self->{styles};
+	splice @$list, $index, 0, $css_obj->{styles}[0];
+
+	$index < 0        ? $#$list + $index :
+	$index <= $#$list ? $index           :
+	                    $#$list
+}
+
+sub deleteRule {
+	my ($self,$index) = @_;
+	my $list = $self->{styles};
+	$index > $#$list and die CSS::DOM::Exception->new(
+		INDEX_SIZE_ERR,
+		"The index passed to deleteRule ($index) is too large"
+	);
+	splice @$list, $index, 1;
+	return # nothing;
+}
 
 
 
 my %features = (
-#	stylesheets => { '2.0' => 1 },
+	stylesheets => { '2.0' => 1 },
 #	css => { '2.0' => 1 },
 	css2 => { '2.0' => 1 },
 );
@@ -91,7 +136,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -105,8 +150,12 @@ This is an alpha version. If you could please test it and report any bugs
   use CSS::DOM;
   
   $sheet = new CSS::DOM;
+  $sheet->read_string( $css_source );
   
   # ...
+
+=for comment
+~~~ I’ve got to finish writing the synopsis
 
 =head1 DESCRIPTION
 
@@ -125,6 +174,8 @@ interfaces, and inherits from L<CSS>.
 Creates a new stylesheet object.
 
 =head2 Attributes
+
+=over 4
 
 =item type
 
@@ -149,11 +200,26 @@ Returns the style sheet's URI, if applicable.
 
 =item title
 
+Returns the value of the owner node's title attribute.
+
 =item media
+
+Returns the MediaList associated with the style sheet (or a plain list in
+list context). This defaults to an
+empty list. You can pass a comma-delimited string to the MediaList's
+C<mediaText> method to initialise it.
+
+(The medium information is not actually used [yet] by CSS::DOM, but you
+can put it there.)
 
 =item ownerRule
 
-B<These three have not yet been implemented.>
+This currently just returns an empty list (or undef in scalar context).
+
+=for comment
+If this style sheet was created by an @import rule, this returns the rule;
+otherwise it returns null (undef or an empty list). (You can't actually use
+this yet, as the CSSImportRule interface has not been implemented.)
 
 =item cssRules
 
@@ -162,11 +228,14 @@ blessed
 array reference) of L<CSS::DOM::Rule> objects. In list context it returns a
 list.
 
-=item insertRule
+=item insertRule ( $css_code, $index )
 
-=item deleteRule
+Parses the rule contained in the C<$css_code>, inserting it the style
+sheet's list of rules at the given C<$index>.
 
-B<Not yet implmented.>
+=item deleteRule ( $index )
+
+Deletes the rule at the given C<$index>.
 
 =item hasFeature ( $feature, $version )
 
@@ -176,7 +245,7 @@ This is actually supposed to be a method of the 'DOMImplementation' object.
 (See, for instance, L<HTML::DOM::Interface>'s method of the same name,
 which delegates to this one.) This returns a boolean indicating whether a
 particular DOM module is implemented. Right now it returns true only for
-the 'CSS2' feature (version '2.0').
+the 'CSS2' and 'StyleSheets' features (version '2.0').
 
 =back
 
@@ -214,8 +283,8 @@ machine-readable list of standard methods.)
   CSS
       CSS::DOM                 StyleSheet, CSSStyleSheet
   ::Array
-     [::MediaList              MediaList]
-     [::StyleSheetList         StyleSheetList]
+      ::MediaList              MediaList
+      ::StyleSheetList         StyleSheetList
       ::RuleList               CSSRuleList
   ::Rule                       CSSRule
       ::Rule::Style            CSSStyleRule
@@ -281,15 +350,13 @@ by Perl’s built-in ‘time’ function are used.
 
 =head1 PREREQUISITES
 
-perl 5.6.0 or later
+perl 5.8.0 or later
 
 L<CSS.pm|CSS> version 1 or later
 
-L<Scalar::Util>
+L<Scalar::Util> 1.08 or later
 
 L<Exporter> 5.57 or later
-
-L<constant> 1.03 or later
 
 =head1 BUGS
 

@@ -1,7 +1,13 @@
 Revision history for CSS::DOM
 
-Er well, although this file is called 'Changes,' there haven't actually
-*been* any changes yet.
+0.02    19 May, 2008
+      • CSS::DOM  now has its title  and  media  methods  (so  the
+        StyleSheet interface has been completed) and its ownerRule,
+        insertRule and deleteRule methods (the CSSStyleSheet inter-
+        face is now complete).
+      • CSS::DOM::MediaList and CSS::DOM::StyleSheetList have
+        been added.
+      • CSS::DOM::Rule now has type and cssText methods.
 
 0.01    23 December, 2007
         First release

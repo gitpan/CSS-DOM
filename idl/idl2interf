@@ -53,6 +53,8 @@ use File::Slurp;
 BEGIN { chdir dirname $0;} 
 use lib '../lib';
 use CSS::DOM;
+use CSS::DOM::MediaList;
+use CSS::DOM::StyleSheetList;
 
 %types = qw(
 	void VOID
@@ -97,12 +99,14 @@ while(/interface\s+(\w+)\s*(?::\s*(?:[\w:]+:)?([\w]+)\s*)?\{(.*?)\}/sg) {
 	for (split /;\s*/, $members) {
 		if(/((?s).*?)\(/) {
 			split ' ', $1;
-			# $_[0] has the type; $_[1] has the name
+			# $_[-2] has the type; $_[-1] has the name
+			# These offset are negative, because some types
+			# types are two words long, such as unsigned long
 			push @{$interfaces{$name}},
 				"  " .
-				('#' x! $interf2pack{$name}->can($_[1])) .
-				"\t\t$_[1] => METHOD | " . 
-				($types{$_[0]} || 'OBJ') . ",\n";
+				('#' x! $interf2pack{$name}->can($_[-1])) .
+				"\t\t$_[-1] => METHOD | " . 
+				($types{$_[-2]} || 'OBJ') . ",\n";
 			next;
 		}
 		split;

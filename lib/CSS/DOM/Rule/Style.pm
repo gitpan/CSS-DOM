@@ -1,13 +1,19 @@
 package CSS::DOM::Rule::Style;
 
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 use warnings;
 use strict;
 
- require        CSS::DOM::Rule;
+ use        CSS::DOM::Rule;
 
 our @ISA = 'CSS::DOM::Rule';
+
+# override:
+sub type { CSS::DOM::Rule::STYLE_RULE }
+
+
+# CSSStyleRule interface:
 
 # ~~~ selectorText
 
@@ -26,7 +32,7 @@ CSS::DOM::Rule::Style - CSS style rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =head1 SYNOPSIS
 
@@ -43,13 +49,16 @@ the CSSStyleRule DOM interface.
 
 =head1 METHODS
 
-(None of these have been implemented yet.)
-
 =over 4
 
 =item selectorText
 
+(not yet implemented)
+
 =item style
+
+Returns the CSS::DOM::StyleDecl object representing the declaration block
+of this rule.
 
 =back
 

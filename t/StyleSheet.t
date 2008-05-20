@@ -43,4 +43,17 @@ use tests 1; # (set_)href
 	is $ss->href, 'eouvoenth', 'href';
 }
 
-# ~~~ title, media (to be implemented)
+use tests 1; # title
+{
+	sub foo'attr { return shift->{+shift} }
+	$ss->set_ownerNode(my $foo = bless {title => 'tilde'}, 'foo');
+	is $ss->title, 'tilde', 'title';
+}
+
+use tests 2; # media
+{
+	isa_ok $ss->media, 'CSS::DOM::MediaList';
+	$ss->media->mediaText('screen, printer');
+	is_deeply [$ss->media], [screen=>printer=>],
+		'media in list context';
+}

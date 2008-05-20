@@ -1,7 +1,7 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 # Every class that defines constants should be loaded here.
 require CSS::DOM::Rule;
@@ -123,17 +123,17 @@ For gory details, look at the source code. In fact, here it is:
   	 StyleSheetList => {
 		_hash => 0,
 		_array => 1,
-  #		length => NUM | READONLY,
-  #		item => METHOD | OBJ,
+  		length => NUM | READONLY,
+  		item => METHOD | OBJ,
   	 },
   	 MediaList => {
 		_hash => 0,
 		_array => 1,
-  #		mediaText => STR,
-  #		length => NUM | READONLY,
-  #		item => METHOD | STR,
-  #		deleteMedium => METHOD | VOID,
-  #		appendMedium => METHOD | VOID,
+  		mediaText => STR,
+  		length => NUM | READONLY,
+  		item => METHOD | STR,
+  		deleteMedium => METHOD | VOID,
+  		appendMedium => METHOD | VOID,
   	 },
   	 CSSRuleList => {
 		_hash => 0,
@@ -153,8 +153,8 @@ For gory details, look at the source code. In fact, here it is:
   			CSS::DOM::Rule::FONT_FACE_RULE
   			CSS::DOM::Rule::PAGE_RULE
   		]],
-  #		type => NUM | READONLY,
-  #		cssText => STR,
+  		type => NUM | READONLY,
+  		cssText => STR,
   #		parentStyleSheet => OBJ | READONLY,
   #		parentRule => OBJ | READONLY,
   	 },
@@ -171,7 +171,7 @@ For gory details, look at the source code. In fact, here it is:
 		_array => 0,
   #		media => OBJ | READONLY,
   #		cssRules => OBJ | READONLY,
-  #		long => METHOD | OBJ,
+  #		insertRule => METHOD | NUM,
   #		deleteRule => METHOD | VOID,
   	 },
   	 CSSFontFaceRule => {
@@ -378,12 +378,12 @@ For gory details, look at the source code. In fact, here it is:
   		ownerNode => OBJ | READONLY,
   		parentStyleSheet => OBJ | READONLY,
   		href => STR | READONLY,
-  #		title => STR | READONLY,
-  #		media => OBJ | READONLY,
-  #		ownerRule => OBJ | READONLY,
+  		title => STR | READONLY,
+  		media => OBJ | READONLY,
+  		ownerRule => OBJ | READONLY,
   		cssRules => OBJ | READONLY,
-  #		long => METHOD | OBJ,
-  #		deleteRule => METHOD | VOID,
+  		insertRule => METHOD | NUM,
+  		deleteRule => METHOD | VOID,
   	 },
   );
 
@@ -391,4 +391,4 @@ __END__
 
 =head1 SEE ALSO
 
-L<HTML::DOM>
+L<CSS::DOM>

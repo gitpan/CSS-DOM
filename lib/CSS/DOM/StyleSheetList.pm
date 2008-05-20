@@ -1,4 +1,4 @@
-package CSS::DOM::RuleList;
+package CSS::DOM::StyleSheetList;
 
 $VERSION = '0.02';
 
@@ -9,7 +9,7 @@ require CSS::DOM::Array;
 
 =head1 NAME
 
-CSS::DOM::RuleList - Rule list class for CSS::DOM
+CSS::DOM::StyleSheetList - Style sheet list class for CSS::DOM
 
 =head1 VERSION
 
@@ -21,8 +21,8 @@ Version 0.02
 
 =head1 DESCRIPTION
 
-This module implements rule lists for L<CSS::DOM>. It implements the
-CSSRuleList DOM interface.
+This module implements style sheet lists for L<CSS::DOM>. It implements the
+StyleSheetList DOM interface.
 
 This simply inherits from L<CSS::DOM::Array> without adding anything
 extra.

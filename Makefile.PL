@@ -1,4 +1,4 @@
-BEGIN { require 5.006 }
+BEGIN { require 5.008 } # In 5.6, sub {} means sub {@_}
 use strict;
 use ExtUtils::MakeMaker;
 
