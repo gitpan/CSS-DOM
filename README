@@ -1,4 +1,4 @@
-HTML::DOM, version 0.02
+CSS::DOM, version 0.03
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
@@ -6,11 +6,22 @@ described in the W3C DOM specification.
 
 CHANGES IN THIS RELEASE
 
-• CSS::DOM now has its title and media methods  (so the StyleSheet
-  interface has been completed) and its ownerRule,  insertRule and
-  deleteRule methods (the CSSStyleSheet interface is now complete).
-• CSS::DOM::MediaList and CSS::DOM::StyleSheetList have been added.
-• CSS::DOM::Rule now has type and cssText methods.
+This version breaks compatibility with older versions. Here is a
+summary of the changes.  See  the  Changes  file  for  the  more
+detailed version.
+
+• CSS.pm is no longer used. The parsing interface has changed.  None
+  of the  CSS.pm-specific methods can be used  anymore  (read_string,
+  etc.).  Use CSS::DOM::parse and CSS::DOM::StyleDecl::parse instead
+  (actually, these are constructors so you should normally use these
+  instead of ‘new’).
+• The CSSStyleRule and CSSRule interfaces are now complete.
+• The CSSMediaRule, CSSPageRule and CSSImportRule interfaces have
+   been added.
+• The CSS::DOM::StyleDecl module has been renamed to ::Style.
+• The CSS::DOM  constructor now accepts the named argument
+ ‘url_fetcher’, which can be passed a coderef that will be
+  called by @import rules.
 
 
 INSTALLATION
@@ -32,10 +43,9 @@ Or you can use the following:
 
 DEPENDENCIES
 
-This module requires perl 5.8.0 or later, and the following modules:
+This module requires perl 5.8.2 or later, and the following modules:
 
-• CSS.pm version 1 or later
-• Scalar::Util 1.08 or later
+• constant::lexical
 • Exporter 5.57 or later
 
 
@@ -53,7 +63,7 @@ Or try using man (it's faster, in my experience):
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2007 Father Chrysostomos
+Copyright (C) 2007-8 Father Chrysostomos
 
 This program is free software; you may redistribute it and/or modify
 it under the same terms as perl.

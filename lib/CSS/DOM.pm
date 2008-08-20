@@ -1,8 +1,8 @@
 package CSS::DOM;
 
-use 5.008;
+use 5.008002;
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -13,37 +13,38 @@ use CSS::DOM::Exception
 	'SYNTAX_ERR' ,'HIERARCHY_REQUEST_ERR', 'INDEX_SIZE_ERR';
 use Scalar::Util 'weaken';
 
-require CSS;
-require CSS::DOM::StyleDecl;
 require CSS::DOM::RuleList;
-require CSS::DOM::Rule::Style;
 
-our @ISA = 'CSS';
-
-# Overrides:
+no constant 1.03 ();
+use constant::lexical {
+	ruls => 0,
+	ownr => 1, # owner rule
+	node => 2, # owner node
+	dsbl => 3,
+	hrfe => 4,
+	medi => 5,
+	fetc => 6, # url fetcher
+	prsh => 7, # parent sheet
+};
 
 sub new {
-	my $self = SUPER::new {shift};
-	bless $self->{styles}, 'CSS::DOM::RuleList';
+	my $self = bless[],shift;
+	my %args = @_;
+	if(defined(my $arg = delete $args{url_fetcher})) {
+		$self->[fetc] = $arg;
+	}
 	$self;
 }
-
-sub parse_string {
-	my $self = shift;
-	$self->SUPER::parse_string(@_);
-	for(@{$self->{styles}}) {
-		# ~~~ How do I determine which type of rule it is ?
-		# ~~~ Duzz the lite parser even support at-rules?
-		$_->isa('CSS::DOM::Rule')
-			|| bless $_, 'CSS::DOM::Rule::Style';
-	}
-	bless $self->{styles}, 'CSS::DOM::RuleList';
+sub _fetcher {
+	my $old = (my$ self = shift)->[fetc];
+	$ self -> [ fetc ] = shift if @ _ ;
+	$old
 }
 
-sub purge { for (shift) {
-	$_->SUPER::purge;
-	bless $_->{styles}, 'CSS::DOM::RuleList';
-}}
+sub parse {
+	require CSS::DOM::Parser;
+	goto &CSS::DOM::Parser::parse;
+}
 
 
 # DOM STUFF:
@@ -52,20 +53,23 @@ sub purge { for (shift) {
 
 sub type { 'text/css' }
 sub disabled {
-	my $old = (my $self = shift) ->{_CSS_DOM_disabled};
-	@_ and $self->{_CSS_DOM_disabled} = shift;
+	my $old = (my $self = shift) ->[dsbl];
+	@_ and $self->[dsbl] = shift;
 	$old
 };
-sub ownerNode { shift->{_CSS_DOM_owner} }
-sub set_ownerNode { weaken($_[0]->{_CSS_DOM_owner} = $_[1]) }
-sub parentStyleSheet { } # ~~~ Still to be implemented. Who sets this?
-sub href { shift->{_CSS_DOM_href} }
-sub set_href { $_[0]->{_CSS_DOM_href} = $_[1] }
+sub ownerNode { defined $_[0][node]?$_[0][node]:() }
+sub set_ownerNode { weaken($_[0]->[node] = $_[1]) }
+sub parentStyleSheet { shift->[prsh]||() }
+sub _set_parentStyleSheet { weaken($_[0]->[prsh] = $_[1]) }
+sub href { shift->[hrfe] }
+sub set_href { $_[0]->[hrfe] = $_[1] }
 sub title { no warnings 'uninitialized';
            ''.(shift->ownerNode || return)->attr('title') }
+
+# If you find a bug in here, Media.pm’s method probably also needs fixing.
 sub media {
-	wantarray ? @{$_[0]->{_CSS_DOM_media}||return} :
-		($_[0]->{_CSS_DOM_media} ||= (
+	wantarray ? @{$_[0]->[medi]||return} :
+		($_[0]->[medi] ||= (
 			require CSS::DOM::MediaList,
 			CSS::DOM::MediaList->new
 		))
@@ -75,28 +79,40 @@ sub media {
 # CSSStyleSheet interface:
 
 sub ownerRule {
-	shift->{_CSS_DOM_owner} || ()
+	shift->[ownr] || ()
 }
 sub _set_ownerRule {
-	weaken($_[0]->{_CSS_DOM_owner} = $_[1]);
+	weaken($_[0]->[ownr] = $_[1]);
 }
 
-sub cssRules { wantarray ? @{shift->{styles}} : shift->{styles}; }
+# If you find a bug in the following three methods, Media.pm’s methods
+# probably also need fixing.
+sub cssRules { 
+	wantarray
+		? @{shift->[ruls]||return}
+		: (shift->[ruls]||=new CSS::DOM::RuleList);
+}
 
-sub insertRule { # ~~~ This needs to raise an HIERARCHY_REQUEST_ERR if the
-                 #     rule cannot be inserted at  the  specified  index;
-                 #     e.g., if an @import rule is inserted after a stan-
-                 #     dard rule.
+sub insertRule { # This is supposed to raise an HIERARCHY_REQUEST_ERR if
+                 # the rule cannot be inserted at the specified  index;
+                 # e.g.,  if an  @import  rule is inserted after a stan-
+                 # dard rule. But we don’t do that, in order to maintain
+                 # future compatibility.
 	my ($self, $rule_string, $index) = @_;
 	
-	my $css_obj = new CSS::DOM;
-	eval {
-		$css_obj ->read_string($rule_string);
-		1
-	} or die CSS::DOM::Exception->new(SYNTAX_ERR, $@);
+	require CSS::DOM::Parser;
+	my ($at,$rule);
+	{
+		local *@;
+		$rule = CSS::DOM::Parser::parse_statement($rule_string);
+		$at = $@
+	}
+	$at and die new CSS::DOM::Exception SYNTAX_ERR, $at;
 
-	my $list = $self->{styles};
-	splice @$list, $index, 0, $css_obj->{styles}[0];
+	$rule->_set_parentStyleSheet($self);
+
+	my $list = $self->cssRules; # cssRules takes care of ||=
+	splice @$list, $index, 0, $rule;
 
 	$index < 0        ? $#$list + $index :
 	$index <= $#$list ? $index           :
@@ -105,7 +121,7 @@ sub insertRule { # ~~~ This needs to raise an HIERARCHY_REQUEST_ERR if the
 
 sub deleteRule {
 	my ($self,$index) = @_;
-	my $list = $self->{styles};
+	my $list = $self->[ruls];
 	$index > $#$list and die CSS::DOM::Exception->new(
 		INDEX_SIZE_ERR,
 		"The index passed to deleteRule ($index) is too large"
@@ -136,10 +152,13 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
+
+The interface for feeding CSS code to CSS::DOM changed incompatibly in
+version 0.03.
 
 =for comment
 This is an alpha version. If you could please test it and report any bugs
@@ -148,14 +167,25 @@ This is an alpha version. If you could please test it and report any bugs
 =head1 SYNOPSIS
 
   use CSS::DOM;
-  
-  $sheet = new CSS::DOM;
-  $sheet->read_string( $css_source );
-  
-  # ...
 
-=for comment
-~~~ I’ve got to finish writing the synopsis
+  my $sheet = CSS::DOM::parse( $css_source );
+
+  use CSS::DOM::Style;
+  my $style = CSS::DOM::Style::parse(
+      'background: red; font-size: large'
+  );
+
+  my $other_sheet = new CSS::DOM; # empty
+  $other_sheet->insertRule(
+     'a{ text-decoration: none }',
+      $other_sheet->cssRules->length,
+  );
+  # etc.
+  
+  # access DOM properties
+  $other_sheet->cssRules->[0]->selectorText('p'); # change it
+  $style->fontSize;          # returns 'large'
+  $style->fontSize('small'); # change it
 
 =head1 DESCRIPTION
 
@@ -163,15 +193,89 @@ This module provides the CSS-specific interfaces described in the W3C DOM
 recommendation.
 
 The CSS::DOM class itself implements the StyleSheet and CSSStyleSheet DOM
-interfaces, and inherits from L<CSS>.
+interfaces.
 
-=head1 METHODS
+=head1 CONSTRUCTORS
 
-=head2 Constructor
+=over 4
 
-  $style = new CSS::DOM;
+=item CSS::DOM::parse( $string )
 
-Creates a new stylesheet object.
+This method parses the C<$string> and returns a style sheet object. If you
+just have a CSS style declaration, e.g., from an HTML C<style> attribute,
+see L<CSS::DOM::Style/parse>.
+
+=item new CSS::DOM
+
+Creates a new, empty style sheet object. Use this only if you plan to build
+the style sheet piece by piece, instead of parsing a block of CSS code.
+
+=back
+
+You can pass named arguments to both of those. The only one supported so
+far is C<url_fetcher>, which should be a code ref that returns the contents
+of the style sheet at the URL passed as the sole argument. E.g.,
+
+  # Disclaimer: This does not work with relative URLs.
+  use LWP::Simple;
+  use CSS::DOM;
+  $css = '@import "file.css"; /* other stuff ... ';
+  $ss = CSS::DOM::parse $css, url_fetcher => sub { get shift };
+  $ss->cssRules->[0]->styleSheet; # returns a style sheet object
+                                  # corresponding to file.css
+
+The subroutine can choose to return C<undef>, in which case the @import 
+rule's C<styleSheet> method will return null (empty list or C<undef>), as
+it would if no C<url_fetcher> were specified.
+
+=head1 SYNTAX ERRORS
+
+The two constructors above, and also
+L<C<CSS::DOM::Style::parse|CSS::DOM::Style/parse>, set C<$@> to the empty 
+string upon success. If 
+they
+encounter a syntax error, they set C<$@> to the error and return an object
+that represents whatever was parsed up to that point.
+
+Other methods that parse CSS code might die on encountering
+syntax errors, and should usually be wrapped in an C<eval>.
+
+The parser follows the 'future-compatible' syntax described in the CSS 2.1
+specification, and also the spec's rules for handling parsing errors.
+Anything not handled by those two is a syntax error.
+
+In other words, a syntax error is one of the following:
+
+=over 4
+
+=item *
+
+An unexpected closing bracket, as
+in these examples
+
+  a { text-decoration: none )
+  *[name=~'foo'} {}
+  #thing { clip: rect( ]
+
+=item *
+
+An HTML comment delimiter within a rule; e.g.,
+
+  a { text-decoration : none <!-- /* Oops! */ }
+  <!-- /*ok*/ @media --> /* bad! */ print { }
+
+=item *
+
+An extra C<@> keyword or semicolon where it doesn't belong; e.g.,
+
+  @media @print { .... }
+  @import "file.css" @print;
+  td, @page { ... }
+  #tabbar td; #tab1 { }
+
+=back
+
+=head1 OBJECT METHODS
 
 =head2 Attributes
 
@@ -184,7 +288,7 @@ Returns the string 'text/css'.
 =item disabled
 
 Allows one to specify whether the style sheet is used. (This attribute is
-not actually used yet by CSS::DOM.)
+not actually used yet by CSS::DOM.) You can set it by passing an argument.
 
 =item ownerNode
 
@@ -192,7 +296,8 @@ Returns the node that 'owns' this style sheet.
 
 =item parentStyleSheet
 
-This currently just returns an empty list.
+If the style sheet belongs to an '@import' rule, this returns the style
+sheet containing that rule. Otherwise it returns an empty list.
 
 =item href
 
@@ -214,12 +319,8 @@ can put it there.)
 
 =item ownerRule
 
-This currently just returns an empty list (or undef in scalar context).
-
-=for comment
 If this style sheet was created by an @import rule, this returns the rule;
-otherwise it returns null (undef or an empty list). (You can't actually use
-this yet, as the CSSImportRule interface has not been implemented.)
+otherwise it returns an empty list (or undef in scalar context).
 
 =item cssRules
 
@@ -227,6 +328,12 @@ In scalar context, this returns a L<CSS::DOM::RuleList> object (simply a
 blessed
 array reference) of L<CSS::DOM::Rule> objects. In list context it returns a
 list.
+
+=back
+
+=head2 Methods
+
+=over 4
 
 =item insertRule ( $css_code, $index )
 
@@ -286,17 +393,16 @@ machine-readable list of standard methods.)
       ::MediaList              MediaList
       ::StyleSheetList         StyleSheetList
       ::RuleList               CSSRuleList
-  ::Rule                       CSSRule
+  ::Rule                       CSSRule, CSSUnknownRule
       ::Rule::Style            CSSStyleRule
-     [::Rule::Media            CSSMediaRule]
+      ::Rule::Media            CSSMediaRule
      [::Rule::FontFace         CSSFontFaceRule]
-     [::Rule::Page             CSSPageRule]
-     [::Rule::Import           CSSImportRule]
+      ::Rule::Page             CSSPageRule
+      ::Rule::Import           CSSImportRule
      [::Rule::Charset          CSSCharsetRule]
-     [::Rule::Unknown          CSSUnknownRule]
-  ::StyleDecl                  CSSStyleDeclaration, CSS2Properties
- [::Value                      CSSValue]
-     [::Value::Primitive       CSSPrimitiveValue]
+  ::Style                      CSSStyleDeclaration, CSS2Properties
+  ::Value                      CSSValue
+      ::Value::Primitive       CSSPrimitiveValue
      [::Value::List            CSSValueList]
  [::RGBColor                   RGBColor]
  [::Rect                       Rect]
@@ -347,18 +453,23 @@ by Perl’s built-in ‘time’ function are used.
 
 =end for-me
 
+=back
 
 =head1 PREREQUISITES
 
-perl 5.8.0 or later
-
-L<CSS.pm|CSS> version 1 or later
-
-L<Scalar::Util> 1.08 or later
+perl 5.8.2 or higher
 
 L<Exporter> 5.57 or later
 
+L<constant::lexical>
+
 =head1 BUGS
+
+CSS 'shorthand' properties (such as 'font') are not supported yet. Right
+now they are treated as their own properties, unrelated to those they are
+short for.
+
+'!important' is not supported yet.
 
 To report bugs, please e-mail the author.
 
@@ -374,7 +485,7 @@ it under the same terms as perl.
 
 All the classes listed above under L</CLASSES AND DOM INTERFACES>.
 
-L<CSS.pm|CSS> and L<HTML::DOM>
+L<CSS::SAC>, L<CSS.pm|CSS> and L<HTML::DOM>
 
 The DOM Level 2 Style specification at
 S<L<http://www.w3.org/TR/DOM-Level-2-Style>>

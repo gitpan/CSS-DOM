@@ -1,6 +1,6 @@
 package CSS::DOM::MediaList;
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 require CSS::DOM::Array;
 @ISA = 'CSS::DOM::Array';
@@ -49,11 +49,21 @@ CSS::DOM::MediaList - Medium list class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
-  # ...
+  use CSS::DOM;
+  $media_list = new CSS::DOM  ->media;
+
+  use CSS::DOM::MediaList;
+  $media_list = new MediaList 'screen', 'papyrus';
+
+  @media = @$media_list; # use as array
+  $media_list->mediaText; # returns a string
+  $media_list->mediaText('print, screen'); # change it
+  $media_list->deleteMedium('print');
+  $media_list->appendMedium('tv');
 
 =head1 DESCRIPTION
 
@@ -79,7 +89,7 @@ e.g., 'screen, print'.
 
 =item deleteMedium ( $name )
 
-Deletes the named medium from the list, or throws an exception if it cannot
+Deletes the named medium from the list, or throws an error if it cannot
 be found.
 
 =item appendMedium ( $name )

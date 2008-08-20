@@ -18,8 +18,7 @@ CSS::DOM::Rule::FontFace   CSSFontFaceRule
 CSS::DOM::Rule::Page       CSSPageRule
 CSS::DOM::Rule::Import     CSSImportRule
 CSS::DOM::Rule::Charset    CSSCharsetRule
-CSS::DOM::Rule::Unknown    CSSUnknownRule
-CSS::DOM::StyleDecl        CSSStyleDeclaration
+CSS::DOM::Style        CSSStyleDeclaration
 CSS::DOM::Value            CSSValue
 CSS::DOM::Value::Primitive CSSPrimitiveValue
 CSS::DOM::Value::List      CSSValueList
@@ -28,7 +27,7 @@ CSS::DOM::Rect             Rect
 CSS::DOM::Counter          Counter
 ]);
 
-%interf2pack = reverse(@pack2interf),;
+%interf2pack = reverse(@pack2interf);
 
 %skip_interf = map +($_=>1), qw(
   LinkStyle
@@ -37,11 +36,9 @@ CSS::DOM::Counter          Counter
   DocumentCSS
   DOMImplementationCSS
   ElementCSSInlineStyle
+
+  CSSUnknownRule
 ),
-# I can’t be bothered to program this thing to comment out constants in
-# these interfaces:
-	CSSPrimitiveValue, CSSValue
-;
 
 # ~~~ Are these lists complete?
 %is_hash = qw/  /;
@@ -52,9 +49,8 @@ use File::Basename;
 use File::Slurp;
 BEGIN { chdir dirname $0;} 
 use lib '../lib';
-use CSS::DOM;
-use CSS::DOM::MediaList;
-use CSS::DOM::StyleSheetList;
+
+eval "require $_" for values %interf2pack;
 
 %types = qw(
 	void VOID

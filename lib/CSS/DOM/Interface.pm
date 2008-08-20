@@ -1,10 +1,12 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 # Every class that defines constants should be loaded here.
 require CSS::DOM::Rule;
+require CSS::DOM::Value;
+require CSS::DOM::Value::Primitive;
 
 =head1 NAME
 
@@ -14,73 +16,67 @@ CSS::DOM::Interface - A list of CSS::DOM's interface members in machine-readable
 
   use CSS::DOM::Interface ':all';
 
-  # ...
-
-=begin comment
+  # name of DOM interface (CSSStyleRule):
+  $CSS::DOM::Interface{"CSS::DOM::Rule::Style"};
   
-  # name of DOM interface (HTMLDocument):
-  $HTML::DOM::Interface{"HTML::DOM"};
-  
-  # interface it inherits from (Document):
-  $HTML::DOM::Interface{HTMLDocument}{_isa};
+  # interface it inherits from (CSSRule):
+  $CSS::DOM::Interface{CSSStyleRule}{_isa};
   
   # whether this can be used as an array
-  $HTML::DOM::Interface{HTMLDocument}{_array};
+  $CSS::DOM::Interface{MediaList}{_array}; # true
   # or hash
-  $HTML::DOM::Interface{HTMLDocument}{_hash};
+  $CSS::DOM::Interface{MediaList}{_hash}; # false
   
   
   # Properties and Methods
   
   # list them all
-  grep !/^_/, keys %{ $HTML::DOM::Interface{HTMLDocument} };
+  grep !/^_/, keys %{ $CSS::DOM::Interface{CSSStyleSheet} };
   
   # see whether a given property is supported
-  exists $HTML::DOM::Interface{HTMLDocument}{foo}; # false
+  exists $CSS::DOM::Interface{CSSStyleSheet}{foo}; # false
   
   # Is it a method?
-  $HTML::DOM::Interface{HTMLDocument}{title} & METHOD; # false
-  $HTML::DOM::Interface{HTMLDocument}{open}  & METHOD; # true
+  $CSS::DOM::Interface{CSSStyleSheet}{cssRules}   & METHOD; # false
+  $CSS::DOM::Interface{CSSStyleSheet}{insertRule} & METHOD; # true
   
   # Does the method return nothing?
-  $HTML::DOM::Interface{HTMLDocument}{open} & VOID; # true
+  $CSS::DOM::Interface{MediaList}{deleteMedium} & VOID; # true
   
   # Is a property read-only?
-  $HTML::DOM::Interface{HTMLDocument}{referrer} & READONLY; # true
+  $CSS::DOM::Interface{StyleSheetList}{length} & READONLY; # true
   
   # Data types of properties
-  ($HTML::DOM::Interface{HTMLDocument}{referrer} & TYPE) == STR;  # true
-  ($HTML::DOM::Interface{HTMLDocument}{title}    & TYPE) == BOOL; # false
-  ($HTML::DOM::Interface{HTMLDocument}{cookie}   & TYPE) == NUM;  # false
-  ($HTML::DOM::Interface{HTMLDocument}{forms}    & TYPE) == OBJ;  # false
+  ($CSS::DOM::Interface{CSSStyleSheet}{type}      & TYPE)
+                                                    == STR;  # true
+  ($CSS::DOM::Interface{CSSStyleSheet}{disabled}  & TYPE)
+                                                    == BOOL; # true
+  ($CSS::DOM::Interface{CSSStyleSheet}{ownerNode} & TYPE)
+                                                    == NUM;  # false
+  ($CSS::DOM::Interface{CSSStyleSheet}{href}     & TYPE)
+                                                    == OBJ;  # false
   
   # and return types of methods:
-  ($HTML::DOM::Interface{HTMLDocument}
-                           ->{getElementById} & TYPE) == STR;  # false
-  ($HTML::DOM::Interface{Node}{hasChildNodes} & TYPE) == BOOL; # true
-  ($HTML::DOM::Interface{Node}{appendChild}   & TYPE) == NUM;  # false
-  ($HTML::DOM::Interface{Node}{replaceChild}  & TYPE) == OBJ;  # true
+  ($CSS::DOM::Interface{MediaList}{item} & TYPE) == STR;  # true
+  ($CSS::DOM::Interface{CSSMediaRule}
+                          ->{insertRule} & TYPE) == BOOL; # false
+  ($CSS::DOM::Interface{CSSStyleDeclaration}
+                     ->{getPropertyVaue} & TYPE) == NUM;  # false
+  ($CSS::DOM::Interface{CSSStyleDeclaration}
+                      ->{removeProperty} & TYPE) == OBJ;  # false
   
   
   # Constants
 
-  # list of constant names in the form "HTML::DOM::Node::ELEMENT_NODE";
-  @{ $HTML::DOM::Interface{Node}{_constants} };
-
-=end comment
+  # list of constant names in the form "CSS::DOM::Node::STYLE_RULE";
+  @{ $CSS::DOM::Interface{CSSRule}{_constants} };
 
 =head1 DESCRIPTION
 
-=for comment
 The synopsis should tell you almost everything you need to know. But be
 warned that C<$foo & TYPE> is meaningless when C<$foo & METHOD> and
 C<$foo & VOID> are both true. For more
 gory details, look at the source code. In fact, here it is:
-
-See L<HTML::DOM::Interface> for now, for a description. This is simply the
-CSS equivalent.
-
-For gory details, look at the source code. In fact, here it is:
 
 =cut
 
@@ -112,8 +108,7 @@ For gory details, look at the source code. In fact, here it is:
   	'CSS::DOM::Rule::Page' => 'CSSPageRule',
   	'CSS::DOM::Rule::Import' => 'CSSImportRule',
   	'CSS::DOM::Rule::Charset' => 'CSSCharsetRule',
-  	'CSS::DOM::Rule::Unknown' => 'CSSUnknownRule',
-  	'CSS::DOM::StyleDecl' => 'CSSStyleDeclaration',
+  	'CSS::DOM::Style' => 'CSSStyleDeclaration',
   	'CSS::DOM::Value' => 'CSSValue',
   	'CSS::DOM::Value::Primitive' => 'CSSPrimitiveValue',
   	'CSS::DOM::Value::List' => 'CSSValueList',
@@ -155,24 +150,24 @@ For gory details, look at the source code. In fact, here it is:
   		]],
   		type => NUM | READONLY,
   		cssText => STR,
-  #		parentStyleSheet => OBJ | READONLY,
-  #		parentRule => OBJ | READONLY,
+  		parentStyleSheet => OBJ | READONLY,
+  		parentRule => OBJ | READONLY,
   	 },
   	 CSSStyleRule => {
 		_isa => 'CSSRule',
 		_hash => 0,
 		_array => 0,
-  #		selectorText => STR,
+  		selectorText => STR,
   		style => OBJ | READONLY,
   	 },
   	 CSSMediaRule => {
 		_isa => 'CSSRule',
 		_hash => 0,
 		_array => 0,
-  #		media => OBJ | READONLY,
-  #		cssRules => OBJ | READONLY,
-  #		insertRule => METHOD | NUM,
-  #		deleteRule => METHOD | VOID,
+  		media => OBJ | READONLY,
+  		cssRules => OBJ | READONLY,
+  		insertRule => METHOD | NUM,
+  		deleteRule => METHOD | VOID,
   	 },
   	 CSSFontFaceRule => {
 		_isa => 'CSSRule',
@@ -184,27 +179,22 @@ For gory details, look at the source code. In fact, here it is:
 		_isa => 'CSSRule',
 		_hash => 0,
 		_array => 0,
-  #		selectorText => STR,
-  #		style => OBJ | READONLY,
+  		selectorText => STR,
+  		style => OBJ | READONLY,
   	 },
   	 CSSImportRule => {
 		_isa => 'CSSRule',
 		_hash => 0,
 		_array => 0,
-  #		href => STR | READONLY,
-  #		media => OBJ | READONLY,
-  #		styleSheet => OBJ | READONLY,
+  		href => STR | READONLY,
+  		media => OBJ | READONLY,
+  		styleSheet => OBJ | READONLY,
   	 },
   	 CSSCharsetRule => {
 		_isa => 'CSSRule',
 		_hash => 0,
 		_array => 0,
   #		encoding => STR,
-  	 },
-  	 CSSUnknownRule => {
-		_isa => 'CSSRule',
-		_hash => 0,
-		_array => 0,
   	 },
   	 CSSStyleDeclaration => {
 		_hash => 0,
@@ -340,6 +330,59 @@ For gory details, look at the source code. In fact, here it is:
   		width => STR,
   		wordSpacing => STR,
   		zIndex => STR,
+  	 },
+  	 CSSValue => {
+		_hash => 0,
+		_array => 0,
+  		_constants => [qw[
+  			CSS::DOM::Value::CSS_INHERIT
+  			CSS::DOM::Value::CSS_PRIMITIVE_VALUE
+  			CSS::DOM::Value::CSS_VALUE_LIST
+  			CSS::DOM::Value::CSS_CUSTOM
+  		]],
+  #		cssText => STR,
+  #		cssValueType => NUM | READONLY,
+  	 },
+  	 CSSPrimitiveValue => {
+		_isa => 'CSSValue',
+		_hash => 0,
+		_array => 0,
+  		_constants => [qw[
+  			CSS::DOM::Value::Primitive::CSS_UNKNOWN
+  			CSS::DOM::Value::Primitive::CSS_NUMBER
+  			CSS::DOM::Value::Primitive::CSS_PERCENTAGE
+  			CSS::DOM::Value::Primitive::CSS_EMS
+  			CSS::DOM::Value::Primitive::CSS_EXS
+  			CSS::DOM::Value::Primitive::CSS_PX
+  			CSS::DOM::Value::Primitive::CSS_CM
+  			CSS::DOM::Value::Primitive::CSS_MM
+  			CSS::DOM::Value::Primitive::CSS_IN
+  			CSS::DOM::Value::Primitive::CSS_PT
+  			CSS::DOM::Value::Primitive::CSS_PC
+  			CSS::DOM::Value::Primitive::CSS_DEG
+  			CSS::DOM::Value::Primitive::CSS_RAD
+  			CSS::DOM::Value::Primitive::CSS_GRAD
+  			CSS::DOM::Value::Primitive::CSS_MS
+  			CSS::DOM::Value::Primitive::CSS_S
+  			CSS::DOM::Value::Primitive::CSS_HZ
+  			CSS::DOM::Value::Primitive::CSS_KHZ
+  			CSS::DOM::Value::Primitive::CSS_DIMENSION
+  			CSS::DOM::Value::Primitive::CSS_STRING
+  			CSS::DOM::Value::Primitive::CSS_URI
+  			CSS::DOM::Value::Primitive::CSS_IDENT
+  			CSS::DOM::Value::Primitive::CSS_ATTR
+  			CSS::DOM::Value::Primitive::CSS_COUNTER
+  			CSS::DOM::Value::Primitive::CSS_RECT
+  			CSS::DOM::Value::Primitive::CSS_RGBCOLOR
+  		]],
+  #		primitiveType => NUM | READONLY,
+  #		setFloatValue => METHOD | VOID,
+  #		getFloatValue => METHOD | OBJ,
+  #		setStringValue => METHOD | VOID,
+  #		getStringValue => METHOD | STR,
+  #		getCounterValue => METHOD | OBJ,
+  #		getRectValue => METHOD | OBJ,
+  #		getRGBColorValue => METHOD | OBJ,
   	 },
   	 CSSValueList => {
 		_isa => 'CSSValue',

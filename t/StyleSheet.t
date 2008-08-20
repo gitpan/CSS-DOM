@@ -10,9 +10,8 @@ plan tests => $tests;
 use tests 1; # use
 use_ok 'CSS::DOM';
 
-use tests 2; # constructor and inheritance
+use tests 1; # constructor 
 isa_ok my $ss = new CSS::DOM, 'CSS::DOM';
-isa_ok $ss, 'CSS';
 
 use tests 1; # type
 is $ss->type, 'text/css', 'type';
@@ -23,18 +22,29 @@ ok!$ss->disabled(1),          , 'set/get disabled';
 ok $ss->disabled              ,     'get disabled again';
 $ss->disabled(0);
 
-use tests 2; # (set_)ownerNode
+use tests 4; # (set_)ownerNode
 {
+	is +()=ownerNode $ss, 0, 'null ownerNode in list context';
+
 	my $foo = [];
 	$ss->set_ownerNode($foo);
 	is $ss->ownerNode, $foo, 'ownerNode';
 	undef $foo;
 	is $ss->ownerNode, undef, 'ownerNode is a weak refeerenc';
+
+	(my $ss = CSS::DOM::parse('@import "',url_fetcher=>sub{''}))
+		->set_ownerNode(my $thing = []);
+	is +()=$ss->cssRules->[0]->styleSheet->ownerNode, 0,
+		'ownerNode of @import\' style sheet';
 }
 
-use tests 1; # parentStyleSheet
+use tests 2; # parentStyleSheet
 {
 	is +()=$ss->parentStyleSheet, 0, 'parentStyleSheet';
+
+	my $ss = CSS::DOM::parse('@import "', url_fetcher=>sub{''});
+	is $ss->cssRules->[0]->styleSheet->parentStyleSheet, $ss,
+		'parentStyleSheet of @import rule\'s sheet';
 }
 
 use tests 1; # (set_)href

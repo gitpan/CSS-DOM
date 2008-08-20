@@ -1,6 +1,6 @@
 package CSS::DOM::RuleList;
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 require CSS::DOM::Array;
 @ISA = 'CSS::DOM::Array';
@@ -13,11 +13,7 @@ CSS::DOM::RuleList - Rule list class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.02
-
-=head1 SYNOPSIS
-
-  # ...
+Version 0.03
 
 =head1 DESCRIPTION
 

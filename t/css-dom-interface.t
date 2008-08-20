@@ -26,5 +26,21 @@ ok exists $CSS::DOM::Interface{CSSStyleSheet}{deleteRule},
 	'CSSStyleSheet deleteRule';
 ok exists $CSS::DOM::Interface{MediaList}{mediaText}, 'MediaList';
 ok exists $CSS::DOM::Interface{StyleSheetList}{length}, 'StyleSheetList';
-ok exists $CSS::DOM::Interface{CSSRule}{type}, 'CSSRule.cssText';
+ok exists $CSS::DOM::Interface{CSSRule}{type}, 'CSSRule.type';
 ok exists $CSS::DOM::Interface{CSSRule}{cssText}, 'CSSRule.cssText';
+
+use tests 14; # changes in 0.03
+ok exists $CSS::DOM::Interface{CSSStyleRule}{selectorText},
+	 'CSSStyleRule.selectorText';
+ok exists $CSS::DOM::Interface{CSSRule}{parentRule}, 'CSSRule.parentRule';
+ok exists $CSS::DOM::Interface{CSSRule}{parentStyleSheet},
+	'CSSRule.parentStyleSheet';
+ok exists $CSS::DOM::Interface{CSSValue}, 'CSSValue';
+ok exists $CSS::DOM::Interface{CSSPrimitiveValue}, 'CSSPrimitiveValue';
+ok exists $CSS::DOM::Interface{CSSMediaRule}{$_}, "CSSMediaRule.$_"
+	for qw 'media cssRules insertRule deleteRule';
+ok exists $CSS::DOM::Interface{CSSImportRule}{$_}, "CSSImportRule.$_"
+	for qw 'href media styleSheet';
+ok !exists $CSS::DOM::Interface{'CSS::DOM::Rule::Unknown'},
+	'CSS::DOM::Rule::Unknown is gone';
+is $CSS::DOM::Interface{'CSS::DOM::Rule'}, 'CSSRule';

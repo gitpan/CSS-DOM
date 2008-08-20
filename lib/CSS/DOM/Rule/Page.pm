@@ -1,8 +1,8 @@
-package CSS::DOM::Rule::Style;
+package CSS::DOM::Rule::Page;
 
 $VERSION = '0.03';
 
-use warnings;
+use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
 
 use CSS::DOM::Exception qw/ SYNTAX_ERR /;
@@ -17,17 +17,17 @@ use constant::lexical { # Don't let this conflict with the superclass.
 };
 
 # overrides:
-sub type { CSS::DOM::Rule::STYLE_RULE }
+
+sub type { CSS::DOM::Rule::PAGE_RULE }
 sub cssText {
 	my $self = shift;
 	my $old;
 	if(defined wantarray) {
-		my $sel = $self->selectorText;
-		length $sel and $sel .= ' ';
-		$old = "$sel\{ "
+		$old = "$self->[selc] { "
 			. $self->[styl]->cssText ." }\n";
 	}
 	if (@_) {
+		require CSS::DOM::Parser;
 		my $new_rule  =  $self->_parse(shift);
 		@$self[styl,selc] = @$new_rule[styl,selc];
 	}
@@ -35,20 +35,27 @@ sub cssText {
 };
 
 
-# CSSStyleRule interface:
+# CSSPageRule interface:
 
-sub selectorText { # ~~~ syntax_err
+sub selectorText {	
 	my $old = (my $self = shift)->[selc];
-#	warn "@{$$old[1]}";# if ref $old eq 'ARRAY' and wantarray;
-	$old = join '', @{$$old[1]}
-		if ref $old eq 'ARRAY' and defined wantarray;
-	$self->[selc] = "".shift if @_;
+	if(@_){
+		# ~~~ I need to make this use the parser’s tokenise func.
+		#    need tests as well; this shouldn’t accept anything
+		#    that would make it technically an unknown rule.
+		(my $sel = shift) =~ 
+		    /^[ \t\r\n\f]*\@page(?![_a-z\200-\377]|\\[^\r\n\f])/
+		or die CSS::DOM::Exception->new(SYNTAX_ERR,
+			'@page selectors must begin with "@page"');
+		$self->[selc] = $sel ;
+	}
 	$old;
 }
 
-sub _set_selector_tokens {
-	shift->[selc] = \@_;
-}
+# ~~~ Do we need this?
+#sub _set_selector_tokens {
+#	
+#}
 
 sub style {
 	$_[0]->[styl] ||= do {
@@ -61,7 +68,7 @@ sub style {
 
 =head1 NAME
 
-CSS::DOM::Rule::Style - CSS style rule class for CSS::DOM
+CSS::DOM::Rule::Page - CSS @page rule class for CSS::DOM
 
 =head1 VERSION
 
@@ -70,20 +77,20 @@ Version 0.03
 =head1 SYNOPSIS
 
   use CSS::DOM;
-  my $ruleset = CSS::DOM->parse(
-      'p:firstline, h3 { font-weight: bold }'
+  my $page_rule = CSS::DOM->parse(
+      '@page :first { stuff: other stuff }'
   )->cssRules->[0];
 
-  $ruleset->selectorText;      # 'p:firstline, h3'
-  $ruleset->style;             # a CSS::DOM::Style object
-  $ruleset->style->fontWeight; # 'bold'
+  $page_rule->selectorText; # '@page :first'
+  $page_rule->style;        # a CSS::DOM::Style object
+  $page_rule->style->stuff; # 'other stuff'
 
 =head1 DESCRIPTION
 
-This module implements CSS style rules for L<CSS::DOM>. It inherits 
+This module implements CSS @page rules for L<CSS::DOM>. It inherits 
 from
 L<CSS::DOM::Rule> and implements
-the CSSStyleRule DOM interface.
+the CSSPageRule DOM interface.
 
 =head1 METHODS
 

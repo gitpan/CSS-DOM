@@ -24,7 +24,7 @@ use constant {
 
 use Exporter 5.57 'import';
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our @EXPORT_OK = qw'
 	INDEX_SIZE_ERR             
 	DOMSTRING_SIZE_ERR         
@@ -102,6 +102,8 @@ sub new {
 	bless [@_[1,2]], shift;
 }
 
+
+=back
 
 =head1 EXPORTS
 

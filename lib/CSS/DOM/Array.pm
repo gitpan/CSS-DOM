@@ -1,6 +1,6 @@
 package CSS::DOM::Array;
 
-$VERSION = '0.02';
+$VERSION = '0.03';
 
 use warnings;
 use strict;
@@ -23,7 +23,7 @@ CSS::DOM::Array - Array class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =head1 SYNOPSIS
 
@@ -73,3 +73,7 @@ Returns the array element at the given C<$index>.
 L<CSS::DOM>
 
 L<CSS::DOM::RuleList>
+
+L<CSS::DOM::StyleSheetList>
+
+L<CSS::DOM::MediaList>

@@ -1,5 +1,41 @@
 Revision history for CSS::DOM
 
+0.03    19 August, 2008
+      • CSS.pm is no longer used. The parsing interface has changed.
+        None of the  CSS.pm-specific methods can be used  any-
+        more  (read_string,  etc.).  Use CSS::DOM::parse  and
+        CSS::DOM::Style::parse instead  (actually,  these are
+        constructors so you should normally use these instead
+        of ‘new’).
+      • CSS rules no longer overload stringification.  That was some-
+        thing inherited from CSS.pm’s CSS::Style. If anyone wants me
+        to add it back, I can.
+      • CSS::DOM::Rule’s constructor’s interface has changed, and now
+        accepts the parent rule or style sheet as the  only  argument.
+        (It used to inherit a constructor from CSS::Style).
+      • CSS::DOM::Rule::Style has its selectorText method, so the
+        CSSStyleRule interface is complete.
+      • CSS::DOM::Rule now has its parentRule and parentStyleSheet
+        methods, so the CSSRule interface is complete.
+      • Started the CSSValue class. So far the constants and a con-
+        structor (doesn’t work yet) exist.
+      • Started the CSSPrimitiveValue class. So far the constants, the
+        constructor and the cssText method (currently read-only)  have
+        been implemented.  Counters,  rects,  and rgb() colors are not
+        yet supported.  This is not actually used by the other modules
+        yet, but you can play with it. It’s quite buggy.
+      • The CSSMediaRule, CSSPageRule and CSSImportRule interfaces
+        have been added.
+      • CSS::DOM’s ownerRule and parentStyleSheet methods are actually
+        capable of return useful  values  now  that  CSSImportRule  is
+        implemented.
+      • The CSS::DOM::StyleDecl module has been renamed to ::Style.
+      • The CSS::DOM  constructor now accepts the named argument
+       ‘url_fetcher’, which can be passed a coderef that will be
+        called by @import rules.
+      • CSS::DOM’s ownerNode now returns an empty list in list context
+        instead of (undef), if there is no owner.
+
 0.02    19 May, 2008
       • CSS::DOM  now has its title  and  media  methods  (so  the
         StyleSheet interface has been completed) and its ownerRule,
@@ -7,7 +43,8 @@ Revision history for CSS::DOM
         face is now complete).
       • CSS::DOM::MediaList and CSS::DOM::StyleSheetList have
         been added.
-      • CSS::DOM::Rule now has type and cssText methods.
+      • CSS::DOM::Rule now has type and cssText methods (the CSSRule
+        interface is complete).
 
 0.01    23 December, 2007
         First release

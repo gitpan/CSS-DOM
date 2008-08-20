@@ -11,8 +11,7 @@ use tests 1; # use
 use_ok 'CSS::DOM::RuleList';
 
 require CSS::DOM;
-(my $ss = new CSS::DOM)
- ->read_string('a{text-decoration: none} p { margin: 0 }');
+my $ss = CSS::DOM::parse('a{text-decoration: none} p { margin: 0 }');
 my $list = cssRules $ss;
 
 use tests 1; # isa

@@ -1,22 +1,20 @@
-BEGIN { require 5.008 } # In 5.6, sub {} means sub {@_}
+BEGIN { require 5.008002 } # In 5.8.1, sub {} means sub {@_}
 use strict;
 use ExtUtils::MakeMaker;
 
 my %prq = (
+	 Carp                         => 1.01, # @CARP_NOT
 	 constant                     => 1.03, # multiple at once
-	 CSS                          => 1,    # object tree interface
-	'CSS::Adaptor'                => 1,
-	'CSS::Style'                  => 1,
+	'constant::lexical'           => 0,
 	 Exporter                     => 5.57, # use Exporter 'import';
+	 overload                     => 0,
 	'Scalar::Util'                => 0,
 	 strict                       => 0,
 	 warnings                     => 0,
 # for testing only:
-	'Scalar::Util'                => 1.08, # refaddr
+	'Scalar::Util'                => 1.09, # refaddr
 	'Test::More'                  => 0,
 );
-
-#eval { require Hash::Util::FieldHash } or $prq{'Tie::RefHash::Weak'} = 0;
 
 
 WriteMakefile(
