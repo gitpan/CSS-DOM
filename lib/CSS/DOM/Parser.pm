@@ -1,6 +1,6 @@
 package CSS::DOM::Parser;
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 use re 'taint';
@@ -212,7 +212,7 @@ sub parse_statement {
 	my $pos = pos $_[0];
 	my($types,$tokens,) = tokenise $_[0];
 	my $stmt;
-	for($types) {
+	eval{ for($types) {
 		s/^s//
 			and shift @$tokens;
 		if(/^@/) {
@@ -225,10 +225,11 @@ sub parse_statement {
 			) or last;
 #			use DDS; Dump $stmt;
 		}
-	}
+	}};
 	pos $_[0] = $pos;
 	$@ = length $types ? shortmess "Invalid CSS statement"
-			: '';
+			: ''
+		unless $@;
 	return $stmt;
 }
 
@@ -314,23 +315,29 @@ sub _parse_at_rule { for (shift) { for my $tokens (shift) {
 			return $rule;
 		}
 	}
-	elsif($unesc_at eq '@page'
-	   && s/^((?:s?:i)?)(s?{s?)//) {
+	elsif($unesc_at eq '@page' && s/^((?:s?:i)?)(s?{s?)//
+	    ||$unesc_at eq '@font-face' && s/^()(s?{s?)// ) {
 		my $selector = "\@$1";
 		my @selector = ('@page', splice @$tokens, 0, $+[1]);
 		my @block_start =
 			splice @$tokens, 0, length(my $block_start = $2);
 
+		my $class = qw[FontFace Page][$unesc_at eq '@page'];
+
 		# Unfortunately, these two lines may turn out to
 		# be a waste.
-		require CSS::DOM::Rule::Page;
-		my $style = (my $rule = new CSS::DOM::Rule::Page $_[0]||())
-			-> style;
+		require "CSS/DOM/Rule/$class.pm";
+		my $style = (
+			my $rule = "CSS::DOM::Rule::$class"->new(
+				$_[0]||()
+			)
+		) -> style;
 
 		$style = _parse_style_declaration($_,$tokens,$style);
 		if($style) {
 			s/^}s?// and splice @$tokens, 0, $+[0]; # remove }
-			$rule->selectorText(join '', @selector);
+			$rule->selectorText(join '', @selector)
+				if $class eq 'Page';
 			return $rule;
 		}
 		else {
@@ -492,7 +499,7 @@ CSS::DOM::Parser - Parser for CSS::DOM
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 DESCRIPTION
 

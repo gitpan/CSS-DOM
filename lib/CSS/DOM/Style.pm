@@ -1,6 +1,6 @@
 package CSS::DOM::Style;
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 use warnings; no warnings qw' utf8';
 use strict;
@@ -66,7 +66,7 @@ sub setProperty {
 	my ($self, $name, $value, $priority) = @_;
 
 	require CSS'DOM'Parser;
-	my @tokens = eval { CSS'DOM'Parser'tokenise $value; }
+	my @tokens = eval { CSS'DOM'Parser'tokenise($value); }
 		or die CSS::DOM'Exception->new( SYNTAX_ERR, $@);	
 
 	my $props = $$self{props} ||= {};
@@ -129,7 +129,7 @@ CSS::DOM::Style - CSS style declaration class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 

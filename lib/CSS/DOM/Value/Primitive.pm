@@ -1,6 +1,6 @@
 package CSS::DOM::Value::Primitive;
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -195,7 +195,7 @@ CSS::DOM::Value::Primitive - CSSPrimitiveValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 

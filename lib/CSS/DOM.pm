@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -152,7 +152,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).

@@ -47,9 +47,11 @@ is $decl->getPropertyValue('text-decoration'), 'underline',
 use tests 5; # setProperty
 is +()=$decl->setProperty('color', 'red'), 0, 'setProperty ret val';
 is $decl->getPropertyValue('color'), 'red', 'effect of setProperty';
+SKIP:{skip "unfinished", 2;
 ok!eval{$decl->setProperty('color', '}');1}, 'setProperty chokes on }';
 cmp_ok $@,'==',&CSS::DOM::Exception::SYNTAX_ERR,
 	'setProperty throws the right error';
+}
 $decl->setProperty('cOlOr', 'blue');
 is $decl->color, 'blue', 'setProperty lcs the property names';
 

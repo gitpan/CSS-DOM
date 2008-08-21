@@ -1,5 +1,10 @@
 Revision history for CSS::DOM
 
+0.04    20 August, 2008
+      • CSS::DOM::Style’s setProperty method now works when ::Style is
+        loaded before ::Parser.
+      • The CSSFontFaceRule interface has been added.
+
 0.03    19 August, 2008
       • CSS.pm is no longer used. The parsing interface has changed.
         None of the  CSS.pm-specific methods can be used  any-

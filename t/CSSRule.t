@@ -38,21 +38,22 @@ use tests 2; #constructor
 		'type after constructor';
 }
 
-use tests 5; # type
+use tests 6; # type
 $ss->insertRule('@shingly blonged;', 0);
 is $ss->cssRules->[0]->type, &UNKNOWN_RULE, 'type of unknown rule';
 $ss->insertRule('a{}', 0);
 is $ss->cssRules->[0]->type, &STYLE_RULE, 'type of style rule';
 $ss->insertRule('@media print {}', 0);
 is $ss->cssRules->[0]->type, &MEDIA_RULE, 'type of @media rule';
-# ~~~ @font
+$ss->insertRule('@font-face {}', 0);
+is $ss->cssRules->[0]->type, &FONT_FACE_RULE, 'type of @font-face rule';
 $ss->insertRule('@page {}', 0);
 is $ss->cssRules->[0]->type, &PAGE_RULE, 'type of @page rule';
 $ss->insertRule('@import "', 0);
 is $ss->cssRules->[0]->type, &IMPORT_RULE, 'type of @import rule';
 # ~~~ charset
 
-use tests 28; # cssText
+use tests 33; # cssText
 {
 	my $rule;
 
@@ -133,7 +134,7 @@ use tests 28; # cssText
 
 
 	ok !eval{$rule->cssText('a { text-decoration: none }');1},
-		'$printrule->cssText dies when set to a{...}';
+		'$pagerule->cssText dies when set to a{...}';
 	cmp_ok $@, '==', CSS::DOM::Exception::INVALID_MODIFICATION_ERR,
 		'$@ is the correct type after setting cssText on @page';
 
@@ -157,7 +158,26 @@ use tests 28; # cssText
 		'$@ is the correct type after setting cssText on @import';
 
 
-	# ~~~ write more tests for other types of rules (font & charset)
+	$ss->insertRule('@font-face{font-family: "ww"; src: url(.t)}', 0);
+	$rule = $ss->cssRules->[0];
+
+	is $rule->cssText,
+	   "\@font-face { font-family: \"ww\"; src: url(.t) }\n", 
+	   'get cssText (@font-face)';
+	is $rule->cssText("\@font-face { margin: 1in }"),
+	   "\@font-face { font-family: \"ww\"; src: url(.t) }\n", 
+	   'get/set cssText (@font-face)';
+	is $rule->cssText, "\@font-face { margin: 1in }\n",
+		'get cssText again (@font-face)';
+
+
+	ok !eval{$rule->cssText('a { text-decoration: none }');1},
+		'$fontrule->cssText dies when set to a{...}';
+	cmp_ok $@, '==', CSS::DOM::Exception::INVALID_MODIFICATION_ERR,
+		'$@ is correct type after setting cssText on @font-face';
+
+
+	# ~~~ write tests for charset
 }
 
 use tests 4; # parentStyleSheet and parentRule

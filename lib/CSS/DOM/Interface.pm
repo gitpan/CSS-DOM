@@ -1,7 +1,7 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 # Every class that defines constants should be loaded here.
 require CSS::DOM::Rule;

@@ -9,7 +9,7 @@ lib/CSS/DOM/Interface.pm
 lib/CSS/DOM/MediaList.pm
 lib/CSS/DOM/Parser.pm
 #lib/CSS/DOM/Rule/Charset.pm
-#lib/CSS/DOM/Rule/FontFace.pm
+lib/CSS/DOM/Rule/FontFace.pm
 lib/CSS/DOM/Rule/Import.pm
 lib/CSS/DOM/Rule/Media.pm
 lib/CSS/DOM/Rule/Page.pm
@@ -34,6 +34,7 @@ t/CSSPageRule.t
 t/CSSPrimitiveValue.t
 t/CSSRule.t
 t/CSSRuleList.t
+t/CSSStyleDeclaration-setProperty.t
 t/CSSStyleDeclaration.t
 t/CSSStyleRule.t
 t/CSSStyleSheet-insertRule.t

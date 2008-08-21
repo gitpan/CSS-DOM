@@ -1,6 +1,6 @@
 package CSS::DOM::MediaList;
 
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 require CSS::DOM::Array;
 @ISA = 'CSS::DOM::Array';
@@ -49,7 +49,7 @@ CSS::DOM::MediaList - Medium list class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =head1 SYNOPSIS
 

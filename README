@@ -1,11 +1,19 @@
-CSS::DOM, version 0.03
+CSS::DOM, version 0.04
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
 
 
-CHANGES IN THIS RELEASE
+RECENT CHANGES
 
+0.04
+----
+• CSS::DOM::Style’s setProperty method now works when ::Style is loaded before ::Parser.
+• The CSSFontFaceRule interface has been added.
+
+
+0.03
+----
 This version breaks compatibility with older versions. Here is a
 summary of the changes.  See  the  Changes  file  for  the  more
 detailed version.
