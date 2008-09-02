@@ -1,5 +1,13 @@
 Revision history for CSS::DOM
 
+0.05    2 September, 2008
+      • CSS::DOM now detects the encoding of CSS files and decodes
+        them (if you ask it to).
+      • CSS::DOM::Style  has  a  non-standard  (i.e., non-DOM)
+        modification_handler method that allows the assignment
+        of a handler that is called whenever the style  object
+        is modified or one of its sub-objects.
+
 0.04    20 August, 2008
       • CSS::DOM::Style’s setProperty method now works when ::Style is
         loaded before ::Parser.

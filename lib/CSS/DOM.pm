@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -152,7 +152,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -212,8 +212,14 @@ the style sheet piece by piece, instead of parsing a block of CSS code.
 
 =back
 
-You can pass named arguments to both of those. The only one supported so
-far is C<url_fetcher>, which should be a code ref that returns the contents
+You can pass named arguments to both of those. C<parse> accepts all of
+them; C<new> understands only the first:
+
+=over
+
+=item url_fetcher
+
+This has to be a code ref that returns the contents
 of the style sheet at the URL passed as the sole argument. E.g.,
 
   # Disclaimer: This does not work with relative URLs.
@@ -224,9 +230,55 @@ of the style sheet at the URL passed as the sole argument. E.g.,
   $ss->cssRules->[0]->styleSheet; # returns a style sheet object
                                   # corresponding to file.css
 
-The subroutine can choose to return C<undef>, in which case the @import 
+The subroutine can choose to return C<undef> or an empty list, in which 
+case the @import 
 rule's C<styleSheet> method will return null (empty list or C<undef>), as
 it would if no C<url_fetcher> were specified.
+
+It can also return named items after the CSS code, like this:
+
+  return $css_code, decode => 1, encoding_hint => 'iso-8859-1';
+
+These correspond to the next two items:
+
+=item decode
+
+If this is specified and set to a true value, then CSS::DOM will treat the
+CSS code as a string of bytes, and try to decode it based on @charset rules
+and byte order marks.
+
+By default it assumes that it is already in Unicode (i.e., decoded).
+
+=item encoding_hint
+
+Use this to provide a hint as to what the encoding might be.
+
+If this is specified, and C<decode> is not, then C<< decode => 1 >> is
+assumed.
+
+=back
+
+=head1 STYLE SHEET ENCODING
+
+See the options above. This section explains how and when you I<should> use
+those options.
+
+According to the CSS spec, any encoding specified in the 'charset' field on
+an HTTP Content-Type header, or the equivalent in other protocols, takes
+precedence. In such a case, since CSS::DOM doesn't deal with HTTP, you have
+to decode it yourself.
+
+Otherwise, you should use C<< decode => 1 >> to instruct CSS::DOM to use
+byte order marks or @charset rules.
+
+If neither of those is present, then encoding data in the referencing
+document (e.g., <link charset="..."> or an HTML document's own encoding),
+if available/applicable, should be used. In this case, you should use the
+C<< encoding_hint >> option, so that CSS::DOM has something to fall back
+to.
+
+If you use C<< decode => 1 >> with no encoding hint, and no BOM or @charset
+is to be found, UTF-8 is assumed.
 
 =head1 SYNTAX ERRORS
 
@@ -396,7 +448,7 @@ machine-readable list of standard methods.)
   ::Rule                       CSSRule, CSSUnknownRule
       ::Rule::Style            CSSStyleRule
       ::Rule::Media            CSSMediaRule
-     [::Rule::FontFace         CSSFontFaceRule]
+      ::Rule::FontFace         CSSFontFaceRule
       ::Rule::Page             CSSPageRule
       ::Rule::Import           CSSImportRule
      [::Rule::Charset          CSSCharsetRule]
@@ -462,6 +514,8 @@ perl 5.8.2 or higher
 L<Exporter> 5.57 or later
 
 L<constant::lexical>
+
+L<Encode> 2.10 or higher
 
 =head1 BUGS
 

@@ -1,35 +1,17 @@
-CSS::DOM, version 0.04
+HTML::DOM, version 0.05
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
 
 
-RECENT CHANGES
+CHANGES IN THIS RELEASE
 
-0.04
-----
-• CSS::DOM::Style’s setProperty method now works when ::Style is loaded before ::Parser.
-• The CSSFontFaceRule interface has been added.
-
-
-0.03
-----
-This version breaks compatibility with older versions. Here is a
-summary of the changes.  See  the  Changes  file  for  the  more
-detailed version.
-
-• CSS.pm is no longer used. The parsing interface has changed.  None
-  of the  CSS.pm-specific methods can be used  anymore  (read_string,
-  etc.).  Use CSS::DOM::parse and CSS::DOM::StyleDecl::parse instead
-  (actually, these are constructors so you should normally use these
-  instead of ‘new’).
-• The CSSStyleRule and CSSRule interfaces are now complete.
-• The CSSMediaRule, CSSPageRule and CSSImportRule interfaces have
-   been added.
-• The CSS::DOM::StyleDecl module has been renamed to ::Style.
-• The CSS::DOM  constructor now accepts the named argument
- ‘url_fetcher’, which can be passed a coderef that will be
-  called by @import rules.
+• CSS::DOM now detects the encoding of CSS files and decodes them (if
+  you ask it to).
+• CSS::DOM::Style  has  a  non-standard  (i.e., non-DOM)
+  modification_handler method that allows the assignment
+  of a handler that is called whenever the style  object
+  is modified or one of its sub-objects.
 
 
 INSTALLATION
@@ -55,6 +37,7 @@ This module requires perl 5.8.2 or later, and the following modules:
 
 • constant::lexical
 • Exporter 5.57 or later
+• Encode 2.10 or later
 
 
 DOCUMENTATION

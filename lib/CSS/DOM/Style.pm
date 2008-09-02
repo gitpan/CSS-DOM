@@ -1,6 +1,6 @@
 package CSS::DOM::Style;
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 use warnings; no warnings qw' utf8';
 use strict;
@@ -39,6 +39,7 @@ sub cssText {
 		my $new =CSS::DOM::Parser::parse_style_declaration($css);
 
 		@$self{'props','names'} = @$new{'props','names'};
+		_m($self);
 	}
 	return $out;
 }
@@ -73,6 +74,7 @@ sub setProperty {
 	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
 	$$props{$name} = \@tokens;
 
+	_m($self);
 	return
 }
 
@@ -121,6 +123,17 @@ sub DESTROY{}
 }
 *cssFloat = \&float;
 
+sub modification_handler {
+	my $old = (my $self = shift)->{mod_handler};
+	$self->{mod_handler} = shift if @_;
+	$old;
+}
+
+sub _m#odified
+{
+	&{$_[0]->{mod_handler} or return}($_[0]);
+}
+
                               !()__END__()!
 
 =head1 NAME
@@ -129,7 +142,7 @@ CSS::DOM::Style - CSS style declaration class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 
@@ -206,6 +219,14 @@ C<$priority> is currently ignored (to be implemented later).
 =item parentRule
 
 Returns the rule to which this declaration belongs.
+
+=item modification_handler ( $coderef )
+
+This method, not part of the DOM, allows you to attach a call-back routine
+that is run whenever a change occurs to the style object (with the style
+object as its only argument). If you call it
+without an argument it returns the current handler. With an argument, it
+returns the old value after setting it.
 
 =back
 

@@ -24,7 +24,9 @@ lib/CSS/DOM/Value/Primitive.pm
 Makefile.PL
 MANIFEST
 README
+t/charset.t
 t/css-dom-interface.t
+t/css-dom-style.t
 t/CSS2Properties.t
 t/CSSCharsetRule.t
 t/CSSFontFaceRule.t

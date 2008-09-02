@@ -1,6 +1,6 @@
 package CSS::DOM::Parser;
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 use re 'taint';
@@ -88,7 +88,7 @@ $token_re = qr/\G(?:
 # tokens, in which case we can provide a $delim_re for matching against a
 # token type string.
 
-sub tokenise { for (shift) {
+sub tokenise { for (''.shift) {
 	my($tokens,@tokens)='';
 	while(/$token_re/gc){
 		my $which = (grep defined $+[$_], 1..$#+)[0];
@@ -181,7 +181,13 @@ $block_re =
 sub parse { # Don’t shift $_[0] off @_. We’d end up copying it if we did
             # that--something we ought to avoid, in case it’s huge.
 	my $pos = pos $_[0];
-	my($types,$tokens,) = tokenise $_[0];
+	my(%args) = @_[1..$#_];
+	my $src;
+	if( $args{qw[encoding_hint decode][exists $args{decode}]} ) {
+		$src = _decode(@_);
+		defined $src or shift, return new CSS::DOM @_;
+	}
+	my($types,$tokens,) = tokenise defined $src ? $src : $_[0];
 	my $sheet = new CSS::DOM @_[1..$#_];
 	my $stmts = $sheet->cssRules;
 	eval { for($types) {
@@ -491,6 +497,198 @@ sub unescape($) {
 	$val;
 }
 
+sub _decode { my $at; for(''.shift) {
+# ~~~ Some of this is repetitive and could probably be compressed.
+	require Encode;
+	if(/^(\xef\xbb\xbf(\@charset "(.*?)";))/s) {
+		my $enc = $3;
+		my $dec = eval{Encode::decode($3, $1, 9)};
+		if(defined $dec) {
+			$dec =~ /^(\x{feff}?)$2\z/
+				and return Encode::decode($enc,
+					$1 ? substr $_, 3 : $_);
+			$@ = $1?"Invalid BOM for $enc: \\xef\\xbb\\xbf"
+		      	    :"\"$enc\" is encoded in ASCII but is not"
+			     ." ASCII-based";
+		}
+	}
+	elsif(/^\xef\xbb\xbf/) {
+		return Encode::decode_utf8(substr $_,3);
+	}
+	elsif(/^(\@charset "(.*?)";)/s) {
+		my $dec = eval{Encode::decode($2, $1, 9)};
+		if(defined $dec) {
+			$dec eq $1
+				and return Encode::decode($2, $_);
+			$@ = "\"$2\" is encoded in ASCII but is not "
+				."ASCII-based";
+		}
+	}
+	elsif(
+	  /^(\xfe\xff(\0\@\0c\0h\0a\0r\0s\0e\0t\0 \0"((?:\0.)*?)\0"\0;))/s
+	) {
+		my $enc = Encode::decode('utf16be', $3);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		if(defined $dec) {
+			$dec =~ /^(\x{feff}?)\@charset "$enc";\z/
+				and return Encode::decode($enc,
+					$1 ? substr $_, 2 : $_);
+			$@ = $1?"Invalid BOM for $enc: \\xfe\xff"
+		      	    :"\"$enc\" is encoded in UCS-2 but is not"
+			     ." UCS-2-based";
+		}
+	}
+	elsif(
+	  /^(\0\@\0c\0h\0a\0r\0s\0e\0t\0 \0"((?:\0.)*?)\0"\0;)/s
+	) {
+		my $origenc = my $enc = Encode::decode('utf16be', $2);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		defined $dec or $dec
+			= eval{Encode::decode($enc.='-be', $1, 9)};
+		if(defined $dec) {
+			$dec eq "\@charset \"$origenc\";"
+				and return Encode::decode($enc, $_);
+			$@ ="\"$origenc\" is encoded in UCS-2 but is not "
+				."UCS-2-based";
+		}
+	}
+	elsif(
+	  /^(\xff\xfe(\@\0c\0h\0a\0r\0s\0e\0t\0 \0"\0((?:.\0)*?)"\0;\0))/s
+	) {
+		my $enc = Encode::decode('utf16le', $3);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		if(defined $dec) {
+			$dec =~ /^(\x{feff}?)\@charset "$enc";\z/
+				and return Encode::decode($enc,
+					$1 ? substr $_, 2 : $_);
+			$@ = $1?"Invalid BOM for $enc: \\xfe\xff"
+		      	    :"\"$enc\" is encoded in UCS-2-LE but is not"
+			     ." UCS-2-LE-based";
+		}
+	}
+	elsif(
+	  /^(\@\0c\0h\0a\0r\0s\0e\0t\0 \0"\0((?:.\0)*?)"\0;\0)/s
+	) {
+		my $origenc = my $enc = Encode::decode('utf16le', $2);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		defined $dec or $dec
+			= eval{Encode::decode($enc.='-le', $1, 9)};
+		if(defined $dec) {
+			$dec eq "\@charset \"$origenc\";"
+				and return Encode::decode($enc, $_);
+			$@ ="\"$enc\" is encoded in UCS-2-LE but is not "
+				."UCS-2-LE-based";
+		}
+	}
+	elsif(
+	  /^(\0\0\xfe\xff(\0{3}\@\0{3}c\0{3}h\0{3}a\0{3}r\0{3}s\0{3}e\0{3}t
+	     \0{3}\ \0{3}"((?:\0{3}.)*?)\0{3}"\0{3};))/sx
+	) {
+		my $enc = Encode::decode('utf32be', $3);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		if(defined $dec) {
+			$dec =~ /^(\x{feff}?)\@charset "$enc";\z/
+				and return Encode::decode($enc,
+					$1 ? substr $_, 2 : $_);
+			$@ = $1?"Invalid BOM for $enc: \\xfe\xff"
+		      	    :"\"$enc\" is encoded in UTF-32-BE but is not"
+			     ." UTF-32-BE-based";
+		}
+	}
+	elsif(
+	  /^(\0{3}\@\0{3}c\0{3}h\0{3}a\0{3}r\0{3}s\0{3}e\0{3}t
+	     \0{3}\ \0{3}"((?:\0{3}.)*?)\0{3}"\0{3};)/sx
+	) {
+		my $origenc = my $enc = Encode::decode('utf32be', $2);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		defined $dec or $dec
+			= eval{Encode::decode($enc.='-be', $1, 9)};
+		if(defined $dec) {
+			$dec eq "\@charset \"$origenc\";"
+				and return Encode::decode($enc, $_);
+			$@ ="\"$enc\" is encoded in UTF-32-BE but is not "
+				."UTF-32-BE-based";
+		}
+	}
+	elsif(
+	  /^(\xff\xfe\0\0(\@\0{3}c\0{3}h\0{3}a\0{3}r\0{3}s\0{3}e\0{3}t
+	     \0{3}\ \0{3}"\0{3}((?:.\0{3})*?)"\0{3};\0{3}))/sx
+	) {
+		my $enc = Encode::decode('utf32le', $3);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		if(defined $dec) {
+			$dec =~ /^(\x{feff}?)\@charset "$enc";\z/
+				and return Encode::decode($enc,
+					$1 ? substr $_, 2 : $_);
+			$@ = $1?"Invalid BOM for $enc: \\xfe\xff"
+		      	    :"\"$enc\" is encoded in UTF-32-LE but is not"
+			     ." UTF-32-LE-based";
+		}
+	}
+	elsif(
+	  /^(\@\0{3}c\0{3}h\0{3}a\0{3}r\0{3}s\0{3}e\0{3}t
+	     \0{3}\ \0{3}"\0{3}((?:.\0{3})*?)"\0{3};\0{3})/sx
+	) {
+		my $origenc = my $enc = Encode::decode('utf32le', $2);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		defined $dec or $dec
+			= eval{Encode::decode($enc.='-le', $1, 9)};
+		if(defined $dec) {
+			$dec eq "\@charset \"$origenc\";"
+				and return Encode::decode($enc, $_);
+			$@ ="\"$enc\" is encoded in UTF-32-LE but is not "
+				."UTF-32-LE-based";
+		}
+	}
+	elsif(/^(?:\0\0\xfe\xff|\xff\xfe\0\0)/) {
+		return Encode::decode('utf32', $_);
+	}
+	elsif(/^(?:\xfe\xff|\xff\xfe)/) {
+		return Encode::decode('utf16', $_);
+	}
+	elsif(
+	  /^(\|\x83\x88\x81\x99\xa2\x85\xa3\@\x7f(.*?)\x7f\^)/s
+	) {
+		my $enc = Encode::decode('cp37', $2);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		if(defined $dec) {
+			$dec eq "\@charset \"$enc\";"
+				and return Encode::decode($enc, $_);
+			$@ ="\"$enc\" is encoded in EBCDIC but is not "
+				."EBCDIC-based";
+		}
+	}
+	elsif(
+	  /^(\xae\x83\x88\x81\x99\xa2\x85\xa3\@\xfc(.*?)\xfc\^)/s
+	) {
+		my $enc = Encode::decode('cp1026', $2);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		if(defined $dec) {
+			$dec eq "\@charset \"$enc\";"
+				and return Encode::decode($enc, $_);
+			$@ ="\"$enc\" is encoded in IBM1026 but is not "
+				."IBM1026-based";
+		}
+	}
+	elsif(
+	  /^(\0charset "(.*?)";)/s
+	) {
+		my $enc = Encode::decode('gsm0338', $2);
+		my $dec = eval{Encode::decode($enc, $1, 9)};
+		if(defined $dec) {
+			$dec eq "\@charset \"$enc\";"
+				and return Encode::decode($enc, $_);
+			$@ ="\"$enc\" is encoded in GSM 0338 but is not "
+				."GSM 0338-based";
+		}
+	}
+	else {
+		my %args = @_;
+		return Encode::decode($args{encoding_hint}||'utf8', $_);
+	}
+	return;
+}}
+
                               **__END__**
 
 =head1 NAME
@@ -499,7 +697,7 @@ CSS::DOM::Parser - Parser for CSS::DOM
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 package CSS::DOM::Value;
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -66,7 +66,7 @@ CSS::DOM::Value - CSSValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 

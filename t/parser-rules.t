@@ -77,7 +77,7 @@ use tests 5; # single statement parser
 		'statement parser chokes on multiple statements'
 }
 
-use tests 8; # styledecl parser
+use tests 9; # styledecl parser
 {
 	my $style = CSS'DOM'Style'parse  ' foo : bar ';
 	is $style->cssText, 'foo: bar', 'style parser';
@@ -99,7 +99,11 @@ use tests 8; # styledecl parser
 
 	is CSS'DOM'Style'parse '\a\z\A\Z\)\a a :bar',
 		->getPropertyValue("\nz\nZ)\na"), 'bar',
-		'style with both kinds of ident escapes'
+		'style with both kinds of ident escapes';
+
+	{ package Phoo; use overload '""'=>sub{'foo:bar'}}
+	is CSS'DOM'Style'parse(bless [], 'Phoo')->cssText, 'foo: bar',
+		'::Style::parse\'s force stringification';
 }
 
 use tests 121; # @media

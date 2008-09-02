@@ -1,6 +1,6 @@
 package CSS::DOM::Rule::Import;
 
-$VERSION = '0.04';
+$VERSION = '0.05';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -85,12 +85,13 @@ sub styleSheet{
 	unless( defined($self->[shet])) {
 		my $fetcher = $self->parentStyleSheet->_fetcher;
 		# ~~~ What do we do about the charset?
-		my $css;
-		$css = $fetcher->($self->href) if defined $fetcher;
+		my($css,@args);
+		($css,@args) = $fetcher->($self->href) if defined $fetcher;
 		defined $css or $self->[shet]=0, return;		
 		require CSS::DOM::Parser;
 		for(($self->[shet] =
-		     eval{CSS::DOM::Parser::parse($css)}||0) || return){
+		         eval{CSS::DOM::Parser::parse($css,@args)}||0)
+		    || return){
 			$_->_set_ownerRule($self);
 			if(my$parent=$self->parentStyleSheet){
 				$_->_set_parentStyleSheet($parent);
@@ -110,7 +111,7 @@ CSS::DOM::Rule::Import - CSS @import rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.04
+Version 0.05
 
 =head1 SYNOPSIS
 
