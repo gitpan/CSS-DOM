@@ -1,12 +1,12 @@
 package CSS::DOM::Value;
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
 
 use Carp;
-use CSS::DOM::Value::Primitive ':all';
+use CSS::DOM::Constants;
 use Exporter 5.57 'import';
 
 no constant 1.03 ();
@@ -15,47 +15,46 @@ use constant::lexical { # If you add to this list, make sure to update the
     valu => 1,
 };
 
-use constant do {
-	my $x = 0;
-	+{ map +($_ => $x++), our @EXPORT_OK = qw/
-		CSS_INHERIT        
-		CSS_PRIMITIVE_VALUE
-		CSS_VALUE_LIST     
-		CSS_CUSTOM         
-	  /}
-};
-
+*EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{value};
 our %EXPORT_TAGS = ( all => \our @EXPORT_OK );
 
 sub new {
-	@_ < 3 and croak
-	 "new CSS::DOM::Value with fewer than 2 args is not supported yet";
-	my $self = bless[@_[1..$#_]], $_[0];
-	if($_[0] eq __PACKAGE__) {
-		# ~~~ what should I do here?
-		$self->[type] == CSS_PRIMITIVE_VALUE
-			and croak "new CSS::DOM::Value CSS_PRIMITIVE_VALUE doesn't work; use new CSS::DOM::Value::Primitive";
-		$self->[type] == CSS_VALUE_LIST and
-			require CSS::DOM::Value::List ,
-			bless $self, 'CSS::DOM::Value::List';
-	}
+	my $self = bless[], $_[0];
+	$self->[type] = $_[1];
+	$_[1] == CSS_CUSTOM
+	? @_ < 3 && croak
+	   'new CSS::DOM::Value(CSS_CUSTOM, $value) requires the $value'
+	: $_[1] == CSS_INHERIT
+		|| croak "Type must be CSS_CUSTOM or CSS_INHERIT";
+
+	$self->[valu] = $_[2];
+
 	$self;
 }
 
 sub new_from_tokens { # undocumented on purpose; this may get changed
 	shift;
-	# ~~~ deal with !important
 	my($types,$tokens) = @_;
+	
+	@$tokens == 1 && $$tokens[0] eq 'inherit'
+		&& return new __PACKAGE__, CSS_INHERIT;
 
 	# See whether it’s a valid CSS 2.1 simple value
+	require CSS'DOM'Value'Primitive;
 	{return CSS'DOM'Value'Primitive->new_from_tokens($types,$tokens)
 		||next}
 
-	# ~~~ add support for value lists and 'inherit' and custom values
+	# ~~~ add support for value lists
 
-	croak "Only primitive values are supported";
-	# This doesn’t work:
-	#return CSS'DOM'Value->new(CSS_CUSTOM, $types, $tokens); 
+	return CSS'DOM'Value->new(CSS_CUSTOM, join '',@$tokens);
+}
+
+sub cssValueType { shift->[type] }
+
+sub cssText {
+	my $self = shift;
+	$self->[type] == CSS_CUSTOM
+		? $self->[valu] : 'inherit'
 }
 
                               !()__END__()!
@@ -66,7 +65,7 @@ CSS::DOM::Value - CSSValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 
@@ -77,31 +76,34 @@ Version 0.05
 This module implements objects that represent CSS property values. It
 implements the DOM CSSValue interface.
 
+This class itself is used for custom values (neither primitive values nor
+lists) and the special 'inherit' value. Subclasses are used for the others.
+
 =head1 METHODS
 
 =head2 Constructor
 
-B<Warning:> This doesn't actually work properly yet. See also
-L<CSS::DOM::Value::Primitive>, which has its own constructor.
+See also L<CSS::DOM::Value::Primitive>, which has its own constructor.
 
 You probably don't need to call this, but here it is anyway:
 
-  $val = new CSS::DOM::Value TYPE, $value;
+  $val = new CSS::DOM::Value TYPE, $css_string;
 
-where C<TYPE> is C<CSS_INHERIT> or C<CSS_CUSTOM>.
+where C<TYPE> is C<CSS_INHERIT> or C<CSS_CUSTOM>. The C<$css_string> is
+only used when C<TYPE> is C<CSS_CUSTOM>.
 
 =head2 Object Methods
 
 =over 4
 
-=item cssText (not yet implemented)
+=item cssText
 
 Returns a string representation of the attribute. Pass an argument to set 
 it.
 
-=item cssValueType (not yet implemented)
+=item cssValueType
 
-Returns the array element at the given C<$index>.
+Returns one of the constants below.
 
 =back
 

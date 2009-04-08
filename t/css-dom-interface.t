@@ -44,3 +44,20 @@ ok exists $CSS::DOM::Interface{CSSImportRule}{$_}, "CSSImportRule.$_"
 ok !exists $CSS::DOM::Interface{'CSS::DOM::Rule::Unknown'},
 	'CSS::DOM::Rule::Unknown is gone';
 is $CSS::DOM::Interface{'CSS::DOM::Rule'}, 'CSSRule';
+
+use tests 1; # changes in 0.04
+ok exists $CSS::DOM::Interface{'CSSFontFaceRule'}, 'CSSFontFaceRule';
+
+use tests 7; # changes in 0.06
+ok exists $CSS::DOM::Interface{'CSSCharsetRule'}, 'CSSCharsetRule';
+ok exists $CSS::DOM::Interface{CSSStyleDeclaration}{getPropertyCSSValue},
+	'getPropertyCSSValue';
+ok exists $CSS::DOM::Interface{CSSStyleDeclaration}{removeProperty},
+	'removeProperty';
+ok exists $CSS::DOM::Interface{CSSStyleDeclaration}{getPropertyPriority},
+	'getPropertyPriority';
+ok exists $CSS::DOM::Interface{CSSStyleDeclaration}{length},
+	'Style->length';
+ok exists $CSS::DOM::Interface{CSSValue}{cssValueType}, 'cssValueType';
+ok exists $CSS::DOM::Interface{CSSValue}{cssText}, 'Value->cssText';
+

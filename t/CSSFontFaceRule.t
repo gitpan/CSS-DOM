@@ -23,7 +23,7 @@ isa_ok $rule, 'CSS::DOM::Rule::FontFace';
 
 use tests 7; #constructor
 {
-	(my $ss = new CSS::DOM)->insertRule('@font-face{}',0);
+	(my $ss = new CSS::DOM)->insertRule('@media screen{}',0);
 	my $rule = $ss->cssRules->[0];
 	my $empty_rule = new CSS::DOM::Rule::FontFace $rule;
 	isa_ok $empty_rule,'CSS::DOM::Rule::FontFace',

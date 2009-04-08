@@ -4,11 +4,12 @@ idl/2-css.idl
 idl/idl2interf
 lib/CSS/DOM.pm
 lib/CSS/DOM/Array.pm
+lib/CSS/DOM/Constants.pm
 lib/CSS/DOM/Exception.pm
 lib/CSS/DOM/Interface.pm
 lib/CSS/DOM/MediaList.pm
 lib/CSS/DOM/Parser.pm
-#lib/CSS/DOM/Rule/Charset.pm
+lib/CSS/DOM/Rule/Charset.pm
 lib/CSS/DOM/Rule/FontFace.pm
 lib/CSS/DOM/Rule/Import.pm
 lib/CSS/DOM/Rule/Media.pm
@@ -18,6 +19,7 @@ lib/CSS/DOM/Rule.pm
 lib/CSS/DOM/RuleList.pm
 lib/CSS/DOM/Style.pm
 lib/CSS/DOM/StyleSheetList.pm
+lib/CSS/DOM/Util.pm
 lib/CSS/DOM/Value.pm
 #lib/CSS/DOM/Value/List.pm
 lib/CSS/DOM/Value/Primitive.pm
@@ -27,6 +29,7 @@ README
 t/charset.t
 t/css-dom-interface.t
 t/css-dom-style.t
+t/css-dom-util.t
 t/CSS2Properties.t
 t/CSSCharsetRule.t
 t/CSSFontFaceRule.t

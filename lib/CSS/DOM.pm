@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -11,6 +11,7 @@ use   # same here
 
 use CSS::DOM::Exception
 	'SYNTAX_ERR' ,'HIERARCHY_REQUEST_ERR', 'INDEX_SIZE_ERR';
+use CSS::DOM::Constants 'STYLE_RULE';
 use Scalar::Util 'weaken';
 
 require CSS::DOM::RuleList;
@@ -27,6 +28,10 @@ use constant::lexical {
 	prsh => 7, # parent sheet
 };
 
+
+# NON-DOM METHODS
+
+# classy method
 sub new {
 	my $self = bless[],shift;
 	my %args = @_;
@@ -35,15 +40,131 @@ sub new {
 	}
 	$self;
 }
+# objectionable method
 sub _fetcher {
 	my $old = (my$ self = shift)->[fetc];
 	$ self -> [ fetc ] = shift if @ _ ;
 	$old
 }
 
+
+# FUNCTIONS
+
 sub parse {
 	require CSS::DOM::Parser;
 	goto &CSS::DOM::Parser::parse;
+}
+
+sub compute_style {
+	my %args = @_;
+	# ~~~ for now we just ignore medium/height/width/ppi. We need to
+	#     support those, too.
+
+	require CSS::DOM::Style;
+	my $style = new CSS::DOM::Style;
+
+	my $elem = delete $args{element};
+	my $pseudo = delete $args{pseudo};
+	$pseudo && $pseudo =~ s/^::?//;
+	
+	# The specificity returned by the style rule is a three-character
+	# string representing the number of id, attr, and elem selector
+	# components (e.g., li.red.level gives "\0\2\1"). We prefix that
+	# with two more chars, to make:
+	#   XXXXX
+	#   ||||`-- element
+	#   |||`-- attribute
+	#   ||`-- id
+	#   |`-- style attribute
+	#   `-- style sheet
+
+	# ‘Style attribute’ is \1 or \0, indicating whether the CSS proper-
+	# ties originate from a style attribute. ‘Style sheet’ is
+	# as follows:
+	#  "\0") user agent normal declarations
+	#  "\1") user agent !important declarations
+	#  "\2") user normal declarations
+	#  "\3") author normal     "
+	#  "\4") author !important "
+	#  "\5") user      "       "
+
+	# The individual properties are sorted according to this scheme.
+
+
+	# ~~~ This isn’t the most efficient algorithm. Perhaps we can cache
+	#     some of this.
+
+	my %specificity; # per property
+
+	my @normal_spec;
+	my @important_spec;
+	my @sheets;
+	if(defined $args{ua_sheet}) {
+		push @normal_spec, chr 0;
+		push @important_spec, chr 1;
+		push @sheets, delete $args{ua_sheet};
+	}
+	if(defined $args{user_sheet}) {
+		push @normal_spec, chr 2;
+		push @important_spec, chr 5;
+		push @sheets, delete $args{user_sheet};
+	}
+	if(defined $args{author_sheets}) {
+		my $s = delete $args{author_sheets};
+		push @normal_spec, (chr 3) x @$s;
+		push @important_spec, (chr 4) x @$s;
+		push @sheets, @$s;
+	}
+	while(@sheets) {
+		my $n = shift @normal_spec;
+		my $i = shift @important_spec;
+		my $s = shift @sheets;
+		my @rules = $s->cssRules;
+		while(@rules) {
+			my $r = shift @rules;
+			my $type = $r->type;
+			if($type == STYLE_RULE) {
+				next unless
+				  my $specificity = $r->_selector_matches(
+				    $elem, $pseudo
+				  );
+				my $sty = $r->style;
+				for(0..$sty->length-1) {
+					my $p = $sty->item($_);
+					my $spec = (
+					 $sty->getPropertyPriority($p)
+					  =~
+					 /^important\z/i
+					 ? $i : $n
+					) . "\0$specificity";
+					no warnings 'uninitialized';
+					$spec ge $specificity{$p} and
+					  $style->setProperty(
+					   $p, $sty->getPropertyValue($p)
+					  ),
+					  $specificity{$p} = $spec;
+				}
+			}
+		}
+	}
+	
+	my $sty = $elem->style;
+	for(0..$sty->length-1) {
+					my $p = $sty->item($_);
+					my $spec = (
+					 $sty->getPropertyPriority($p)
+					  =~
+					 /^important\z/i
+					 ? "\4" : "\3"
+					) . "\1\0\0\0";
+					$spec ge $specificity{$p} and
+					  $style->setProperty(
+					   $p, $sty->getPropertyValue($p)
+					  ),
+					  $specificity{$p} = $spec;
+	}
+
+	return $style;
 }
 
 
@@ -152,7 +273,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -427,6 +548,73 @@ Like C<set_ownerNode>, but for C<href>.
 
 =back
 
+=head1 FUNCTIONS
+
+=over
+
+=item CSS::DOM::parse
+
+See L</CONSTRUCTORS>, above.
+
+=item CSS::DOM::compute_style( %options )
+
+B<Warning:> This is still highly experimental and crawling with bugs.
+
+This computes the style for a given HTML element. It does not yet calculate
+actual measurements (e.g., converting percentages to pixels), but simply
+applies the cascading rules and selectors. Shorthand properties are not yet 
+supported, which renders this function quite useless. Pseudo-classes are
+not supported either (but pseudo-elements are).
+
+The CSS 2.1 specification does not specify the handling of user-agent 
+important rules. Since user agent sheets passed to C<compute_style> are
+themselves CSS::DOM objects, they can support them, of course. So 
+C<compute_style> ignores the priority of such declarations when comparing
+them with style sheets in another category, but honours them in relation to
+other user-agent declarations.
+
+The C<%options> are as follows. They are all optional except for 
+C<element>.
+
+=over
+
+=item ua_sheet
+
+The user agent style sheet
+
+=item user_sheet
+
+The user style sheet
+
+=item author_sheets
+
+Array ref of style sheets that the HTML document defines or links to.
+
+=item element
+
+The element
+
+=item pseudo
+
+The pseudo-element (e.g., 'first-line'). This can be specified with no 
+colons (the way Opera
+requires it) or
+with one or two colons (the way Firefox requires it).
+
+=item medium
+
+=item height
+
+=item width
+
+=item ppi
+
+(To be implemented)
+
+=back
+
+=back
+
 =head1 CLASSES AND DOM INTERFACES
 
 Here are the inheritance hierarchy of CSS::DOM's various classes and the
@@ -451,7 +639,7 @@ machine-readable list of standard methods.)
       ::Rule::FontFace         CSSFontFaceRule
       ::Rule::Page             CSSPageRule
       ::Rule::Import           CSSImportRule
-     [::Rule::Charset          CSSCharsetRule]
+      ::Rule::Charset          CSSCharsetRule
   ::Style                      CSSStyleDeclaration, CSS2Properties
   ::Value                      CSSValue
       ::Value::Primitive       CSSPrimitiveValue
@@ -523,13 +711,11 @@ CSS 'shorthand' properties (such as 'font') are not supported yet. Right
 now they are treated as their own properties, unrelated to those they are
 short for.
 
-'!important' is not supported yet.
-
 To report bugs, please e-mail the author.
 
 =head1 AUTHOR & COPYRIGHT
 
-Copyright (C) 2007 Father Chrysostomos <sprout [at] cpan
+Copyright (C) 2007-9 Father Chrysostomos <sprout [at] cpan
 [dot] org>
 
 This program is free software; you may redistribute it and/or modify
@@ -543,3 +729,5 @@ L<CSS::SAC>, L<CSS.pm|CSS> and L<HTML::DOM>
 
 The DOM Level 2 Style specification at
 S<L<http://www.w3.org/TR/DOM-Level-2-Style>>
+
+The CSS 2.1 specification at S<L<http://www.w3.org/TR/CSS21/>>

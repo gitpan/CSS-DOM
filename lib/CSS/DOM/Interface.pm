@@ -1,12 +1,9 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
-# Every class that defines constants should be loaded here.
-require CSS::DOM::Rule;
-require CSS::DOM::Value;
-require CSS::DOM::Value::Primitive;
+require CSS::DOM::Constants;
 
 =head1 NAME
 
@@ -173,7 +170,7 @@ gory details, look at the source code. In fact, here it is:
 		_isa => 'CSSRule',
 		_hash => 0,
 		_array => 0,
-  #		style => OBJ | READONLY,
+  		style => OBJ | READONLY,
   	 },
   	 CSSPageRule => {
 		_isa => 'CSSRule',
@@ -194,19 +191,19 @@ gory details, look at the source code. In fact, here it is:
 		_isa => 'CSSRule',
 		_hash => 0,
 		_array => 0,
-  #		encoding => STR,
+  		encoding => STR,
   	 },
   	 CSSStyleDeclaration => {
 		_hash => 0,
 		_array => 1,
   		cssText => STR,
   		getPropertyValue => METHOD | STR,
-  #		getPropertyCSSValue => METHOD | OBJ,
-  #		removeProperty => METHOD | STR,
-  #		getPropertyPriority => METHOD | STR,
+  		getPropertyCSSValue => METHOD | OBJ,
+  		removeProperty => METHOD | STR,
+  		getPropertyPriority => METHOD | STR,
   		setProperty => METHOD | VOID,
-  #		length => NUM | READONLY,
-  #		item => METHOD | STR,
+  		length => NUM | READONLY,
+  		item => METHOD | STR,
   		parentRule => OBJ | READONLY,
   		azimuth => STR,
   		background => STR,
@@ -340,8 +337,8 @@ gory details, look at the source code. In fact, here it is:
   			CSS::DOM::Value::CSS_VALUE_LIST
   			CSS::DOM::Value::CSS_CUSTOM
   		]],
-  #		cssText => STR,
-  #		cssValueType => NUM | READONLY,
+  		cssText => STR,
+  		cssValueType => NUM | READONLY,
   	 },
   	 CSSPrimitiveValue => {
 		_isa => 'CSSValue',

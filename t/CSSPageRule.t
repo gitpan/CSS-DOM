@@ -22,7 +22,7 @@ isa_ok $rule, 'CSS::DOM::Rule::Page';
 
 use tests 7; #constructor
 {
-	(my $ss = new CSS::DOM)->insertRule('@page{}',0);
+	(my $ss = new CSS::DOM)->insertRule('@media screen{}',0);
 	my $rule = $ss->cssRules->[0];
 	my $empty_rule = new CSS::DOM::Rule::Page $rule;
 	isa_ok $empty_rule,'CSS::DOM::Rule::Page',

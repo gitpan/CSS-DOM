@@ -38,7 +38,7 @@ use tests 2; #constructor
 		'type after constructor';
 }
 
-use tests 6; # type
+use tests 7; # type
 $ss->insertRule('@shingly blonged;', 0);
 is $ss->cssRules->[0]->type, &UNKNOWN_RULE, 'type of unknown rule';
 $ss->insertRule('a{}', 0);
@@ -51,9 +51,10 @@ $ss->insertRule('@page {}', 0);
 is $ss->cssRules->[0]->type, &PAGE_RULE, 'type of @page rule';
 $ss->insertRule('@import "', 0);
 is $ss->cssRules->[0]->type, &IMPORT_RULE, 'type of @import rule';
-# ~~~ charset
+$ss->insertRule('@charset "utf-7";', 0);
+is $ss->cssRules->[0]->type, &CHARSET_RULE, 'type of @charset rule';
 
-use tests 33; # cssText
+use tests 38; # cssText
 {
 	my $rule;
 
@@ -177,7 +178,23 @@ use tests 33; # cssText
 		'$@ is correct type after setting cssText on @font-face';
 
 
-	# ~~~ write tests for charset
+	$ss->insertRule('@charset "utf-7";', 0);
+	$rule = $ss->cssRules->[0];
+
+	is $rule->cssText,
+	   "\@charset \"utf-7\";\n", 
+	   'get cssText (@charset)';
+	is $rule->cssText("\@charset \"\\\"\";"),
+	   "\@charset \"utf-7\";\n", 
+	   'get/set cssText (@charset)';
+	is $rule->cssText, "\@charset \"\\\"\";\n",
+		'get cssText again (@charset)';
+
+
+	ok !eval{$rule->cssText('a { text-decoration: none }');1},
+		'$charsetrule->cssText dies when set to a{...}';
+	cmp_ok $@, '==', CSS::DOM::Exception::INVALID_MODIFICATION_ERR,
+		'$@ is correct type after setting cssText on @charset';
 }
 
 use tests 4; # parentStyleSheet and parentRule

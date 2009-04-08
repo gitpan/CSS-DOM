@@ -1,5 +1,27 @@
 Revision history for CSS::DOM
 
+0.06    8 April, 2009
+      • The CSSCharsetRule interface has been added.
+      • There is a new module named  CSS::DOM::Util,  which,  so  far,
+        provides functions for dealing with CSS  escapes  and  string
+        and URL tokens.
+      • The  CSSStyleDeclaration  interface  is  now  complete
+        (CSS::DOM::Style’s getPropertyCSSValue, removeProperty,
+        getPropertyPriority,  length  and  item  methods  have
+        been added).
+      • Property priorities (i.e., the !important thingy)
+      • CSS::DOM::Style’s setProperty  method now dies when passed an
+        invalid value.
+      • The CSSValue interface has been completed. (CSS::DOM::Value’s
+        constructor actually works  [it only applies  to  CSS_INHERIT
+        and  CSS_CUSTOM  value types]  and the interface methods have
+        been added.)
+      • CSS::DOM::Value::Primitive now supports counters, attr values
+        and rects.
+      • New module:  CSS::Constants, where all the DOM constants have
+        been moved
+      • Highly-experimental compute_style function
+
 0.05    2 September, 2008
       • CSS::DOM now detects the encoding of CSS files and decodes
         them (if you ask it to).
@@ -14,11 +36,11 @@ Revision history for CSS::DOM
       • The CSSFontFaceRule interface has been added.
 
 0.03    19 August, 2008
-      • CSS.pm is no longer used. The parsing interface has changed.
-        None of the  CSS.pm-specific methods can be used  any-
-        more  (read_string,  etc.).  Use CSS::DOM::parse  and
-        CSS::DOM::Style::parse instead  (actually,  these are
-        constructors so you should normally use these instead
+      • CSS.pm  is no longer used.  The  parsing  interface  has
+        changed. None of the CSS.pm-specific methods can be used
+        any more  (read_string,  etc.).  Use CSS::DOM::parse and
+        CSS::DOM::Style::parse instead (actually,  these are con-
+        structors so  you  should  normally  use  these  instead
         of ‘new’).
       • CSS rules no longer overload stringification.  That was some-
         thing inherited from CSS.pm’s CSS::Style. If anyone wants me

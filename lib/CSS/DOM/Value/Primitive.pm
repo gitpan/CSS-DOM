@@ -1,53 +1,36 @@
 package CSS::DOM::Value::Primitive;
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
 
 use Carp;
+use CSS::DOM::Constants;
+use CSS::DOM::Util qw '
+	unescape
+	unescape_url
+	unescape_str escape_str
+	             escape_ident ';
+use CSS::DOM::Value;
 use Exporter 5.57 'import';
+
+our @ISA = CSS::DOM::Value::;
 
 no constant 1.03 ();
 use constant::lexical { # Don’t conflict with the superclass!
     type => 2,
-    valu => 3,
-    unit => 4,
+    valu => 3,  coun => 3, topp => 3,
+    unit => 4,  sepa => 4, righ => 4,
+                styl => 5, botm => 5,
+                           left => 6,
 };
 
-use constant do {
-	my $x = 0;
-	+{ map +($_ => $x++), our @EXPORT_OK = qw/
-		CSS_UNKNOWN    
-		CSS_NUMBER     
-		CSS_PERCENTAGE 
-		CSS_EMS        
-		CSS_EXS        
-		CSS_PX         
-		CSS_CM         
-		CSS_MM         
-		CSS_IN         
-		CSS_PT         
-		CSS_PC         
-		CSS_DEG        
-		CSS_RAD        
-		CSS_GRAD       
-		CSS_MS         
-		CSS_S          
-		CSS_HZ         
-		CSS_KHZ        
-		CSS_DIMENSION  
-		CSS_STRING     
-		CSS_URI        
-		CSS_IDENT      
-		CSS_ATTR       
-		CSS_COUNTER    
-		CSS_RECT       
-		CSS_RGBCOLOR   
-	  /}
-};
-
+*EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{primitive};
 our %EXPORT_TAGS = ( all => \our @EXPORT_OK );
+
+# ~~~ There are so many special cases in the subroutines below, that it
+#     might make more sense to divide them up into separate packages.
 
 my %lentypes = ( # length suffix -> CSSPrimitiveValue type constant;
 	''   => CSS_NUMBER,
@@ -74,6 +57,8 @@ sub new_from_tokens { # This is a private method inconsistent in its behav-
                       # returns nothing if the tokens are not valid.
 	my($class,$types,$tokens) = @_;
 	require CSS'DOM'Parser;
+	no warnings 'regexp';
+
 	if($types =~
 	    /^(?:
 	      (d?)[1%D]
@@ -83,13 +68,12 @@ sub new_from_tokens { # This is a private method inconsistent in its behav-
 	      (i) # (?:si)?) # ~~~ How do we distinguish between ‘font:
 	       |             #     Lucida Grande’ and ‘font: bold italic’?
 	      (fs?$CSS'DOM'Parser'any_re*\)?)
-	    )\z/
+	    )\z/ox
 	   and !$1 || $$tokens[0] eq '+' || $$tokens[0] eq '-'
-	   and $2 ne '#' || do {
+	   and !$2 || $2 ne '#' || do {
 		$$tokens[$-[2]] =~ /#(?:[a-fA-F0-9]{3}|[a-fA-F0-9]{6})\z/
 	   }
 	) {
-		my $type;
 		if(defined $1) {
 			my $sign = $1 ? shift @$tokens : '';
 			$sign eq '+' and $sign = '';
@@ -109,15 +93,14 @@ sub new_from_tokens { # This is a private method inconsistent in its behav-
 					);
 			}
 			elsif($2 eq 'u') {
-				$val =~ s/^url\([ \t\r\n\f]*//;
-				$val =~ s/\)?[ \t\r\n\f]*\z//;
 				return new $class CSS_URI,
-					CSS'DOM'Parser'unescape $val;
+					unescape_url($val);
 			}
 			else { #
 				$val =~ /#(.|..)(.|..)(.|..)/;
+				my $x = -length($1) + 3;
 				return new $class CSS_RGBCOLOR,
-					[hex $1, hex $2, hex $3];
+				  [hex $1 x$x, hex $2 x$x, hex $3 x$x];
 			}
 		}
 		elsif($3) {
@@ -128,7 +111,37 @@ sub new_from_tokens { # This is a private method inconsistent in its behav-
 				CSS'DOM'Parser'unescape($$tokens[$_*2]),
 				0..$#$tokens/2;
 		}
-		else { # function
+		# ‘functions’:
+		elsif($$tokens[0] =~ /^attr\(\z/i
+		  and $types =~ /^fs?(i)s?\)\z/) {
+			return new $class CSS_ATTR,
+				unescape $$tokens[$-[1]]
+		}
+		elsif($$tokens[0] =~ /^counter\(\z/i
+		  and $types =~ /^fs?(i)s?(?:,s?(i)s?)?\)\z/) {
+			return new $class CSS_COUNTER,
+				unescape $$tokens[$-[1]],
+				undef,
+				defined $2
+					? unescape $$tokens[$-[2]]
+					: undef;
+		}
+		elsif($$tokens[0] =~ /^counters\(\z/i
+		  and $types =~ /^fs?(i)s?,s?(')s?(?:,s?(i)s?)?\)\z/) {
+			return new $class CSS_COUNTER,
+				unescape $$tokens[$-[1]],
+				unescape_str($$tokens[$-[2]]),
+				defined $3
+					? unescape($$tokens[$-[3]])
+					: undef;
+		}
+		elsif($$tokens[0] =~ /^rect\(\z/i
+		  and $types =~ /^f s?([Di])s?,s?([Di])s?,
+		                    s?([Di])s?,s?([Di])s? \)\z/x) {
+			return new $class CSS_RECT,
+				map unescape $_, @$tokens[@-[1..4]],
+		}
+		else {
 			# ~~~ We need to deal with counter/rect/rgb/attr
 			# constants are CSS_UNKNOWN CSS_ATTR CSS_COUNTER 
 			# CSS_RECT CSS_RGBCOLOR
@@ -143,7 +156,7 @@ sub new {
 	@_ < 3 and croak
 	 "new CSS::DOM::Value::Primitive with fewer than 2 args is not supported yet";
 	my $self = bless[], shift;
-	@$self[type,valu,unit] = @_;
+	@$self[2..6] = @_;
 	$self;
 }
 
@@ -173,12 +186,24 @@ sub cssText {
 		$_ == CSS_ATTR and return 'attr(' . $self->[valu] . ')';
 #~~~ what's the format?		$_ == CSS_COUNTER && return 'counter(' . $self->[value] . ')';
 		$_ == CSS_URI and return 'url(' . $self->[valu].  ')';
-		$_ == CSS_RECT and return 'rect(' . $self->[valu].')';
+		$_ == CSS_RECT and return 'rect('
+			. join(', ', @$self[topp..left])
+		. ')';
 		$_ == CSS_RGBCOLOR and return 'rgb(' . $self->[valu].')'; # ~~~ deal with different colour formats
 		$_ == CSS_STRING and do {
 			(my $str = $self->[valu]) =~ s/'/\\'/g;;
 			return "'$str'";
 		};
+		$_ == CSS_COUNTER and return
+			'counter' . 's' x defined($self->[sepa]) . '('
+			. escape_ident($self->[coun])
+			. (defined $self->[sepa]
+				? ", " . escape_str($self->[sepa])
+				: '' )
+			. (defined $self->[styl]
+				? ", " . escape_ident($self->[styl])
+				: '' )
+			. ")";
 		return $self->[valu]. (
 			$_ == CSS_DIMENSION && defined $self->[unit]
 				? $self->[unit]
@@ -186,6 +211,8 @@ sub cssText {
 		);
 	}
 }
+
+sub cssValueType { CSS::DOM::Value::CSS_PRIMITIVE_VALUE }
 
                               !()__END__()!
 
@@ -195,7 +222,7 @@ CSS::DOM::Value::Primitive - CSSPrimitiveValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 
@@ -214,15 +241,18 @@ L<CSS::DOM::Value>.
 
 You probably don't need to call this, but here it is anyway:
 
-  $val = new CSS::DOM::Value::Primitive TYPE, $value, $unit_text;
+  $val = new CSS::DOM::Value::Primitive TYPE, @args;
 
-where C<TYPE> is one of the constants listed below. If C<TYPE> is 
-C<CSS_DIMENSION>, then C<$unit_text> is the name of the unit. Otherwise it
-is ignored.
+where C<TYPE> is one of the constants listed below. The C<@args> are
+interpreted differently depending on the C<TYPE>:
 
-=for comment
-I don’t think we need this after all.
-  $val = new CSS::DOM::Value::Primitive $string # (not yet implemented)
+  $class = "CSS::DOM::Value::Primitive";
+  $val = new $class  CSS_DIMENSION, $value, $unit_text
+  $val = new $class  CSS_COUNTER,   $counter_name, $separator, $style
+  $val = new $class  CSS_RECT,      $top, $right, $bottom, $left
+
+All other types just use the first of the C<@args>, treating it as the
+value.
 
 =head2 Object Methods
 
@@ -237,11 +267,9 @@ it B<(not yet supported)>.
 
 The rest have still to be implemented.
 
-=begin comment
+=item cssValueType
 
-=item cssValueType (not yet implemented)
-
-Returns the array element at the given C<$index>.
+Returns C<CSS::DOM::Value::CSS_PRIMITIVE_VALUE>.
 
 =back
 

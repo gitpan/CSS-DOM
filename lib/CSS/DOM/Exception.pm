@@ -1,48 +1,11 @@
 package CSS::DOM::Exception;
 
-use constant {
-# DOMException:
-	INDEX_SIZE_ERR              => 1,
-	DOMSTRING_SIZE_ERR          => 2,
-	HIERARCHY_REQUEST_ERR       => 3,
-	WRONG_DOCUMENT_ERR          => 4,
-	INVALID_CHARACTER_ERR       => 5,
-	NO_DATA_ALLOWED_ERR         => 6,
-	NO_MODIFICATION_ALLOWED_ERR => 7,
-	NOT_FOUND_ERR               => 8,
-	NOT_SUPPORTED_ERR           => 9,
-	INUSE_ATTRIBUTE_ERR         => 10,
-	INVALID_STATE_ERR           => 11,
-	SYNTAX_ERR                  => 12,
-	INVALID_MODIFICATION_ERR    => 13,
-	NAMESPACE_ERR               => 14,
-	INVALID_ACCESS_ERR          => 15,
-
-## EventException:
-#	UNSPECIFIED_EVENT_TYPE_ERR => 0,
-};
-
+use CSS::DOM::Constants;
 use Exporter 5.57 'import';
 
-our $VERSION = '0.05';
-our @EXPORT_OK = qw'
-	INDEX_SIZE_ERR             
-	DOMSTRING_SIZE_ERR         
-	HIERARCHY_REQUEST_ERR      
-	WRONG_DOCUMENT_ERR         
-	INVALID_CHARACTER_ERR      
-	NO_DATA_ALLOWED_ERR        
-	NO_MODIFICATION_ALLOWED_ERR
-	NOT_FOUND_ERR              
-	NOT_SUPPORTED_ERR          
-	INUSE_ATTRIBUTE_ERR
-	INVALID_STATE_ERR       
-	SYNTAX_ERR              
-	INVALID_MODIFICATION_ERR
-	NAMESPACE_ERR           
-	INVALID_ACCESS_ERR      
-';
-#	UNSPECIFIED_EVENT_TYPE_ERR
+our $VERSION = '0.06';
+
+*EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{exception};
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);
 
 

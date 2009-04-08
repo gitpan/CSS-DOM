@@ -29,49 +29,49 @@ use CSS::DOM;
 #     an unknown primitive value? What should I test for?
 
 use tests 22; # isa
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_NUMBER, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_NUMBER, 73),
 	'CSS::DOM::Value::Primitive',  'number value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_PERCENTAGE, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_PERCENTAGE, 73),
 	'CSS::DOM::Value::Primitive',  '% value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_EMS, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_EMS, 73),
 	'CSS::DOM::Value::Primitive',  'em value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_EXS, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_EXS, 73),
 	'CSS::DOM::Value::Primitive',  'ex value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_PX, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_PX, 73),
 	'CSS::DOM::Value::Primitive',  'pixel value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_CM, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_CM, 73),
 	'CSS::DOM::Value::Primitive',  'cm value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_MM, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_MM, 73),
 	'CSS::DOM::Value::Primitive',  'millimetre value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_IN, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_IN, 73),
 	'CSS::DOM::Value::Primitive',  'inch value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_PT, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_PT, 73),
 	'CSS::DOM::Value::Primitive',  'pointy value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_PC, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_PC, 73),
 	'CSS::DOM::Value::Primitive',  'pica value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_DEG, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_DEG, 73),
 	'CSS::DOM::Value::Primitive',  'degree value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_RAD, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_RAD, 73),
 	'CSS::DOM::Value::Primitive',  'radian value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_GRAD, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_GRAD, 73),
 	'CSS::DOM::Value::Primitive',  'grad value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_S, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_S, 73),
 	'CSS::DOM::Value::Primitive',  'sec. value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_MS, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_MS, 73),
 	'CSS::DOM::Value::Primitive',  'ms value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_HZ, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_HZ, 73),
 	'CSS::DOM::Value::Primitive',  'hurts value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_KHZ, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_KHZ, 73),
 	'CSS::DOM::Value::Primitive',  'killer hurts value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_DIMENSION, 73, 'things'),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_DIMENSION, 73, 'things'),
 	'CSS::DOM::Value::Primitive',  'misc dim value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_STRING, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_STRING, 73),
 	'CSS::DOM::Value::Primitive',  'string value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_URI, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_URI, 73),
 	'CSS::DOM::Value::Primitive',  'uri value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_IDENT, 73),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_IDENT, 73),
 	'CSS::DOM::Value::Primitive',  'uri value';
-isa_ok CSS::DOM::Value::Primitive->new(&CSS_ATTR, 'href'),
+isa_ok +CSS::DOM::Value::Primitive->new(&CSS_ATTR, 'href'),
 	'CSS::DOM::Value::Primitive',  'attr value';
 # ~~~ counter rect rgbcolor
 	

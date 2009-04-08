@@ -720,3 +720,83 @@ use tests 14; # @import
 		'@import with escape in medium';
 }
 
+use tests 8; # @font-face
+{
+	my $sheet = new CSS'DOM; my $rule;
+
+	$sheet->insertRule('@font-face{color:blue}',0);
+	is +($rule=pop@{$sheet->cssRules})->type, FONT_FACE_RULE,
+		'@font-face with no ws';
+	is $rule->cssText, "\@font-face { color: blue }\n",
+		'serialised @font-face with no ws';
+
+	$sheet->insertRule(' @font-face { color : blue } ',0);
+	is +($rule=pop@{$sheet->cssRules})->type, FONT_FACE_RULE,
+		'@font-face with ws';
+	is $rule->cssText, "\@font-face { color: blue }\n",
+		'serialised @font-face with ws';
+
+	$sheet->insertRule(' @FOnT-fAce { color : blue } ',0);
+	is +($rule=pop@{$sheet->cssRules})->type, FONT_FACE_RULE,
+		'@FOnT-fAce';
+	is $rule->cssText, "\@font-face { color: blue }\n",
+		'serialised @FOnT-fAce';
+
+	$sheet->insertRule('@fOnt\-f\061 ce {',0);
+	is +($rule=pop@{$sheet->cssRules})->type, FONT_FACE_RULE,
+		'@font-face rule with escapes in the @font-face part';
+	is $rule->cssText, "\@font-face {  }\n",
+	  'serialised @font-face rule no longer w/escapes in "@font-face"';
+}
+
+use tests 13; # @charset
+{
+	my $sheet = new CSS'DOM; my $rule;
+
+	$sheet->insertRule('@charset "utf-8";',0);
+	is +($rule=pop@{$sheet->cssRules})->type, CHARSET_RULE,
+		'@charset';
+	is $rule->cssText, "\@charset \"utf-8\";\n",
+		'serialised @charset';
+
+	$sheet->insertRule(' @charset "utf-7"; ',0);
+	is +($rule=pop@{$sheet->cssRules})->type, CHARSET_RULE,
+		'@charset with ws fore and aft';
+	is $rule->cssText, "\@charset \"utf-7\";\n",
+		'serialised @charset with ws';
+
+	$sheet->insertRule(' @charset "utf\-7"; ',0);
+	is +($rule=pop@{$sheet->cssRules})->type, CHARSET_RULE,
+		'@charset with escapes in the charset name';
+	is $rule->encoding, "utf-7",
+		'encoding parsed out of the @charset with escapes';
+
+	$sheet->insertRule('@chArset "utf-8";',0);
+	is +($rule=pop@{$sheet->cssRules})->type, UNKNOWN_RULE,
+		'@chArset makes it an unknown rule';
+
+	$sheet->insertRule('@chArset "utf-8"',0);
+	is +($rule=pop@{$sheet->cssRules})->type, UNKNOWN_RULE,
+		'missing semicolor makes @charset an unknown rule';
+
+	$sheet->insertRule('@\63harset "utf-8";',0);
+	is +($rule=pop@{$sheet->cssRules})->type, UNKNOWN_RULE,
+		'@\63harset is an unknown rule';
+
+	$sheet->insertRule('@charset \'utf-8\';',0);
+	is +($rule=pop@{$sheet->cssRules})->type, UNKNOWN_RULE,
+		'@charset \'...\' is an unknown rule';
+
+	$sheet->insertRule('@charset  "utf-8";',0);
+	is +($rule=pop@{$sheet->cssRules})->type, UNKNOWN_RULE,
+		'@charset w/dbl space is an unknown rule';
+
+	$sheet->insertRule('@charset"utf-8";',0);
+	is +($rule=pop@{$sheet->cssRules})->type, UNKNOWN_RULE,
+		'@charset w/no space is an unknown rule';
+
+	$sheet->insertRule('@charset "utf-8" ;',0);
+	is +($rule=pop@{$sheet->cssRules})->type, UNKNOWN_RULE,
+		'@charset w/space b4 ; is an unknown rule';
+}
+

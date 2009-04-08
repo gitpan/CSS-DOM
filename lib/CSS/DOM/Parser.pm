@@ -1,6 +1,6 @@
 package CSS::DOM::Parser;
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 use re 'taint';
@@ -9,6 +9,7 @@ use Carp 1.01 qw 'shortmess croak';
 use CSS::DOM;
 use CSS::DOM::Rule::Style;
 use CSS::DOM::Style;
+use CSS::DOM::Util 'unescape';
 
 our @CARP_NOT = qw "CSS::DOM CSS::DOM::Rule::Media";
 
@@ -177,6 +178,14 @@ $any_re =
     )s?/x;
 $block_re =
     qr/{s?(?:(??{$any_re})|(??{$block_re})|[\@;]s?)*}s?/;
+
+sub tokenise_value { # This is for ::Style to use. It dies if there are
+                     # tokens left over.
+	my ($types, $tokens) = tokenise($_[0]);
+	$types =~ /^(?:$any_re|$block_re|\@s?)+\z/ or die
+		"Invalid property value: $_[0]";
+	return $types, $tokens;
+}
 
 sub parse { # Don’t shift $_[0] off @_. We’d end up copying it if we did
             # that--something we ought to avoid, in case it’s huge.
@@ -383,7 +392,18 @@ sub _parse_at_rule { for (shift) { for my $tokens (shift) {
 		}
 		return $rule;
 	}
-	# ~~~ put other rule types here
+	elsif($at eq '@charset'  # NOT $unesc_at!
+	   && @$tokens >= 3         # @charset rule syntax
+	   && $tokens->[0] eq ' '   # is stricter than the
+	   && $tokens->[1] =~ /^"/  # tokenisation  rules.
+	   && s/^s';s?//) {
+		my $esc_enc = $tokens->[1];
+		splice @$tokens, 0, $+[0];
+		require CSS::DOM::Rule::Charset;
+		my $rule = new CSS::DOM::Rule::Charset $_[0]||();
+		$rule->encoding(unescape(substr $esc_enc, 1,-1));
+		return $rule;
+	}
 	else { # unwist
 #warn $_;
 		s/^(s?(??{$any_re})*(?:(??{$block_re})|(?:;s?|\z)))//
@@ -479,22 +499,6 @@ sub _expected {
 		.join('',@$tokens[
 			0..(10<$#$tokens?10 : $#$tokens)
 		]) . ($#$tokens > 10 ? '...' : '') . "'";
-}
-
-sub unescape($) {
-	my $val = shift;
-	$val =~ s/\\(?:
-		([a-fA-F0-9]{1,6})(?:\r\n|[ \n\r\t\f])?
-		  |
-		([^\n\r\f0-9a-f])
-		  |
-		(\r\n?|[\n\f])
-	)/
-		defined $1 ? chr hex $1 :
-		defined $2 ? $2 :
-		             ''
-	/gex;
-	$val;
 }
 
 sub _decode { my $at; for(''.shift) {
@@ -697,7 +701,7 @@ CSS::DOM::Parser - Parser for CSS::DOM
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 DESCRIPTION
 

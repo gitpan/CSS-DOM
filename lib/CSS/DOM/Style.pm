@@ -1,11 +1,12 @@
 package CSS::DOM::Style;
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 use warnings; no warnings qw' utf8';
 use strict;
 
 use CSS::DOM::Exception 'SYNTAX_ERR';
+use CSS::DOM::Util qw 'escape_ident unescape';
 use Scalar::Util 'weaken';
 
 # ~~~ use overload fallback => 1, '@{}' => 
@@ -27,8 +28,11 @@ sub cssText {
 	my $self = shift;
 	my $out;
 	if (defined wantarray) {
-		$out = join "; ", map "$_: " . $self->getPropertyValue($_),
-			@{$$self{names}};
+		$out = join "; ", map {
+			my $pri = $self->getPropertyPriority($_);
+			"$_: ".$self->getPropertyValue($_)." !"x!!$pri
+				. escape_ident($pri)
+		} @{$$self{names}};
 	}
 	if(@_) {
 		my $css = shift;
@@ -49,37 +53,59 @@ sub getPropertyValue {
 	exists +(my $props = shift->{props} || return '')->{
 	  my $name = lc$_[0]
 	}	or return return '';
+	my $val = $props->{$name};
+	return ref $val eq 'ARRAY'
+		? join '', @{$$val[1]} : $val->cssText;
+}
+
+sub getPropertyCSSValue {
+	require CSS::DOM::Value;
+	exists +(my $props = shift->{props} || return)->{
+	  my $name = lc$_[0]
+	}	or return return;
 	my $valref = \$props->{$name};
 	return ref $$valref eq 'ARRAY'
 		? (
-			require CSS'DOM'Rule,
-			join '', @{$$$valref[1]} ,
-		): ref $$valref ? $$valref->cssText : $$valref;
+			$$valref =
+			  new_from_tokens CSS::DOM::Value
+			    @$$valref, 
+		) : $$valref->cssText;
 }
 
-# ~~~ getPropertyCSSValue
-# ~~~ removeProperty
-# ~~~ getPropertyPriority
+sub removeProperty {
+	my $self = shift;
+	my $val = $self->getPropertyValue(my $name = lc shift);
+	delete +($self->{props} || return $val)->{$name};
+	@{$$self{names}} = grep $_ ne $name,
+		@{$$self{names} || return $val};
+	$val;
+}
+
+sub getPropertyPriority {
+	return ${shift->{pri}||return ''}{lc shift} || ''
+}
 
 sub setProperty {
-# ~~~ We still need to deal with priority
-# ~~~ tokenise doesn't actually throw an error; parser needs a parse_value thing
 	my ($self, $name, $value, $priority) = @_;
 
 	require CSS'DOM'Parser;
-	my @tokens = eval { CSS'DOM'Parser'tokenise($value); }
+	my @tokens = eval { CSS'DOM'Parser'tokenise_value($value); }
 		or die CSS::DOM'Exception->new( SYNTAX_ERR, $@);	
 
 	my $props = $$self{props} ||= {};
+	my $pri = $$self{pri} ||= {};
 	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
 	$$props{$name} = \@tokens;
+	$$pri{$name} = $priority;
 
 	_m($self);
 	return
 }
 
-# ~~~ length
-# ~~~ item
+sub item {
+	my $ret = shift->{names}[shift];
+	return defined $ret ? $ret : ''
+}
 
 sub parentRule {
 	shift->{owner}
@@ -89,19 +115,20 @@ sub _set_property_tokens { # private
 	my ($self,$name,$types,$tokens) = @_;
 	my $props = $$self{props} ||= {};
 	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
+	my $pri = $$self{pri} ||={};
+	if($types =~ /(s?(ds?))i\z/ and $tokens->[$-[2]] eq '!') {
+		$types =~ s///;
+		$pri->{$name} = unescape pop @$tokens;
+		pop @$tokens for 1..length $1;
+	} else {
+		$pri->{$name} = '';
+	}
 	$$props{$name} = [$types,$tokens];
 }
 
-# stubs to prevent autoload
-*getPropertyCSSValue=
-*removeProperty=
-*getPropertyPriority=
-*length=
-*item =sub{die};
 
 { my $prop_re = qr/[a-z]+(?:[A-Z][a-z]+)*/;
 sub can {
-	return undef if $_[1] =~ /^(?:getPropertyCSSValue|removeProperty|getPropertyPriority|length|item)\z/; # ~~~ temporary
 	SUPER::can { shift } @_ or
 		$_[0] =~ /^$prop_re\z/o ? \&{+shift} : undef;
 }
@@ -134,6 +161,13 @@ sub _m#odified
 	&{$_[0]->{mod_handler} or return}($_[0]);
 }
 
+sub length { # We put this one last to avoid having to say CORE::length
+             # elsewhere.
+	scalar @{shift->{names}}
+}
+
+
+
                               !()__END__()!
 
 =head1 NAME
@@ -142,7 +176,7 @@ CSS::DOM::Style - CSS style declaration class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 
@@ -197,24 +231,32 @@ pass an argument, it will parsed and replace the existing CSS data.
 
 Returns the value of the named CSS property as a string.
 
-=item getPropertyCSSValue
+=item getPropertyCSSValue ( $name )
 
-=item removeProperty
+Returns an object representing the property's value. 
+(See L<CSS::DOM::Value>.)
+
+=item removeProperty ( $name )
+
+Removes the named property, returning its value.
 
 =item getPropertyPriority
 
-(not yet implmeented)
+Returns the property's priority. This is usually the empty string or the
+word 'important'.
 
 =item setProperty ( $name, $value, $priority )
 
-Sets the CSS property named C<$name>, giving it a value of C<$value>.
-C<$priority> is currently ignored (to be implemented later).
+Sets the CSS property named C<$name>, giving it a value of C<$value> and
+setting the priority to C<$priority>.
 
 =item length
 
+Returns the number of properties
+
 =item item ( $index )
 
-(not yet implmeented)
+Returns the name of the property at the given index.
 
 =item parentRule
 

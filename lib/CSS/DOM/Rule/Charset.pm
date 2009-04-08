@@ -1,44 +1,43 @@
-package CSS::DOM::Rule::FontFace;
+package CSS::DOM::Rule::Charset;
 
 $VERSION = '0.06';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
 
-use CSS::DOM::Exception qw/ SYNTAX_ERR /;
+use CSS::DOM::Util 'escape';
  use        CSS::DOM::Rule;
 
 our @ISA = 'CSS::DOM::Rule';
 
 use constant::lexical # Don't let this conflict with the superclass.
-	styl => 2;
+	cset => 2;
 
 # overrides:
 
-sub type { CSS::DOM::Rule::FONT_FACE_RULE }
+sub type { CSS::DOM::Rule::CHARSET_RULE }
 sub cssText {
 	my $self = shift;
 	my $old;
 	if(defined wantarray) {
-		$old = "\@font-face { "
-			. $self->[styl]->cssText ." }\n";
+		$old = "\@charset \""
+			. escape($self->[cset],'"') ."\";\n";
 	}
 	if (@_) {
 		require CSS::DOM::Parser;
 		my $new_rule  =  $self->_parse(shift);
-		@$self[styl] = @$new_rule[styl];
+		@$self[cset] = @$new_rule[cset];
 	}
 	$old;
 };
 
 
-# CSSFontFaceRule interface:
+# CSSCharsetRule interface:
 
-sub style {
-	$_[0]->[styl] ||= do {
-		require CSS::DOM::Style;
-		new CSS::DOM::Style shift
-	};
+sub encoding {
+	my $old = (my $self = shift)->[cset];
+	@_ and $$self[cset] = shift;
+	$old
 }
 
                               !()__END__()!

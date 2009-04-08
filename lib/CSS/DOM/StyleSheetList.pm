@@ -1,6 +1,6 @@
 package CSS::DOM::StyleSheetList;
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 require CSS::DOM::Array;
 @ISA = 'CSS::DOM::Array';
@@ -13,7 +13,7 @@ CSS::DOM::StyleSheetList - Style sheet list class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 DESCRIPTION
 

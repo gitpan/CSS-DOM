@@ -1,28 +1,18 @@
 package CSS::DOM::Rule;
 
-$VERSION = '0.05';
+$VERSION = '0.06';
 
 use warnings;
 use strict;
 
 use Carp 'croak';
+use CSS::DOM::Constants;
 use CSS::DOM::Exception qw/ SYNTAX_ERR INVALID_MODIFICATION_ERR /;
 use Exporter 5.57 'import';
 use Scalar::Util 'weaken';
 
-use constant do {
-	my $x = 0;
-	+{ map +($_ => $x++), our @EXPORT_OK = qw/
-		UNKNOWN_RULE  
-		STYLE_RULE    
-		CHARSET_RULE  
-		IMPORT_RULE   
-		MEDIA_RULE    
-		FONT_FACE_RULE
-		PAGE_RULE
-	  /}
-};
-our %EXPORT_TAGS = ( all => \our @EXPORT_OK );
+*EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{rule};
+our %EXPORT_TAGS = (all => \our @EXPORT_OK);
 
 no constant 1.03 ();
 use constant::lexical { # Don’t let these conflict with subclasses!
@@ -97,7 +87,7 @@ CSS::DOM::Rule - CSS rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =head1 SYNOPSIS
 
