@@ -1,7 +1,7 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 require CSS::DOM::Constants;
 

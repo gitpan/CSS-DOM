@@ -1,6 +1,6 @@
 package CSS::DOM::Value::Primitive;
 
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -222,7 +222,7 @@ CSS::DOM::Value::Primitive - CSSPrimitiveValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 
@@ -242,17 +242,28 @@ L<CSS::DOM::Value>.
 You probably don't need to call this, but here it is anyway:
 
   $val = new CSS::DOM::Value::Primitive TYPE, @args;
+  $val = new CSS::DOM::Value::Primitive TYPE, %args;
 
-where C<TYPE> is one of the constants listed below. The C<@args> are
+where C<TYPE> is one of the constants listed below. There are two ways of
+specifying arguments.
+
+Array-style arguments (C<@args>) are
 interpreted differently depending on the C<TYPE>:
 
   $class = "CSS::DOM::Value::Primitive";
   $val = new $class  CSS_DIMENSION, $value, $unit_text
   $val = new $class  CSS_COUNTER,   $counter_name, $separator, $style
   $val = new $class  CSS_RECT,      $top, $right, $bottom, $left
+                                       # these four are CSSValue objects
 
 All other types just use the first of the C<@args>, treating it as the
 value.
+
+With hash-style arguments, you can specify either:
+
+  $class = "CSS::DOM::Value::Primitive";
+  $val = new $class  CSS_STRING, value => 'foo';
+  $val = new $class  CSS_STRING, css => '"\66oo"';
 
 =head2 Object Methods
 

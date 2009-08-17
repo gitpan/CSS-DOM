@@ -1,6 +1,6 @@
 #!/usr/bin/perl -T
 
-use strict; use warnings;
+use strict; use warnings; no warnings qw 'utf8 parenthesis regexp once qw';
 our $tests;
 BEGIN { ++$INC{'tests.pm'} }
 sub tests'VERSION { $tests += pop };
@@ -13,7 +13,8 @@ use_ok 'CSS::DOM::Style',;
 
 use tests 3; # first make sure we can use it without loading CSS::DOM
 {
-	my $owner = {properties => []};
+	my $owner = qr//;
+	sub Regexp::parentStyleSheet{}
 	my $decl = new CSS::DOM::Style $owner;
 	is $decl->parentRule, $owner, 'constructor sets the parentRule';
 	undef $owner;
@@ -42,12 +43,25 @@ use tests 1; # getPropertyValue
 is $decl->getPropertyValue('text-decoration'), 'underline',
 	'getPropertyValue';
 
-use tests 2; # getPropertyCSSValue
-isa_ok $decl->getPropertyCSSValue('text-decoration'), 'CSS::DOM::Value',
-	'retval of getPropertyCSSValue';
-is +()=$decl->getPropertyCSSValue('background-color'), '0',
-	'retval of getPropertyCSSValue when the prop doesn\'t exist';
-# ~~~ We need a test for shorthand properties (which always return null).
+use tests 5; # getPropertyCSSValue
+is +()=$decl->getPropertyCSSValue('text-decoration'), '0',
+	'retval of getPropertyCSSValue when prop parser is not in use';
+{
+ require CSS::DOM::PropertyParser;
+ my $decl = CSS::DOM::Style::parse(
+  'text-decoration: underline',
+   property_parser =>$CSS::DOM::PropertyParser::Default
+ );
+ isa_ok $decl->getPropertyCSSValue('text-decoration'), 'CSS::DOM::Value',
+  'retval of getPropertyCSSValue with property parser';
+ isa_ok $decl->getPropertyCSSValue('text-decoration'), 'CSS::DOM::Value',
+  'retval of getPropertyCSSValue (2nd time)'; # weird caching bug in 0.06
+ is +()=$decl->getPropertyCSSValue('background-color'), '0',
+  'retval of getPropertyCSSValue when the prop doesn\'t exist';
+ $decl->font(" bold 13px Times ");
+ is +()=$decl->getPropertyCSSValue('font'), 0, 
+  'getPropertyCSSValue always returns null for shorthand properties';
+}
 
 use tests 3; # removeProperty
 is $decl->removeProperty('azimuth'), '',

@@ -1,5 +1,26 @@
 Revision history for CSS::DOM
 
+0.07    16 August, 2009
+      • Support for specifications that describe  which  properties
+        are supported and  also  the  syntax  of  shorthand  proper-
+        ties  (CSS::DOM::PropertyParser  was  added;  CSS::DOM  and
+        CSS::DOM::Style constructors now take more args)
+      • Incompatible change:  CSS::DOM::Value is no longer used  with-
+        out a property spec.
+      • CSS::DOM has two new methods, url_fetcher and property_parser,
+        which return what was passed to the constructor.
+      • Bug fix  (broken in  0.06):  Assigning to a property an empty
+        string or a string beginning with whitespace or a CSS comment
+        no longer causes an error.
+      • Bug fix:  Assigning whitespace to a property now  deletes  it.
+      • Bug fix:  getPropertyCSSValue  used to  return  the  same  as
+        getPropertyValue the *second*  time it was called for a given
+        property, due to a weird caching problem.
+      • compute_style now considers user-agent  !important rules more
+        important that user and author normal rules.  CSS 2.1 doesn’t
+        say what to do with those,  but I just found that CSS 2 speci-
+        fies it clearly.
+
 0.06    8 April, 2009
       • The CSSCharsetRule interface has been added.
       • There is a new module named  CSS::DOM::Util,  which,  so  far,

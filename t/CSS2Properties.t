@@ -32,3 +32,15 @@ is $decl->cssFloat('left'), 'right', "get/set cssFloat";
 is $decl->getPropertyValue('float'), 'left',
 	"result of setting cssFloat";
 is $decl->cssFloat, 'left', "get cssFloat again";
+
+use tests 8; # assigning '', ' ', ' foo' (bug in 0.06)
+is eval {$decl->cssFloat(''); 1}, 1,'empty string assignment doesn\'t die';
+is $decl->cssFloat, '', 'empty string assignment works';
+$decl->cssFloat('foo');
+is eval {$decl->cssFloat(' '); 1},1,'whitespace assignment doesn\'t die';
+is $decl->cssFloat, '', 'whitespace assignment works';
+$decl->cssFloat('foo');
+is eval{$decl->cssFloat('/*foo*/'); 1},1,'comment assignment doesn\'t die';
+is $decl->cssFloat, '', 'comment assignment works';
+is eval{$decl->cssFloat(' foo'); 1},1,'" foo" assignment doesn\'t die';
+is $decl->cssFloat, ' foo', 'assignment with initial whitespace works';

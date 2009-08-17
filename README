@@ -1,4 +1,4 @@
-CSS::DOM, version 0.06
+CSS::DOM, version 0.07
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
@@ -8,20 +8,11 @@ CHANGES IN THIS RELEASE
 
 (See the Changes file for the long version.)
 
-• CSSCharsetRule interface
-• New module: CSS::DOM::Util
-• The  CSSStyleDeclaration  interface  is  now  complete
-  (CSS::DOM::Style’s getPropertyCSSValue, removeProperty,
-  getPropertyPriority,  length  and  item  methods  have
-  been added).
-• Property priorities (i.e., the !important thingy)
-• CSS::DOM::Style’s  setProperty  method  now  dies  when  passed  an
-  invalid value.
-• The CSSValue interface has been completed.
-• CSS::DOM::Value::Primitive now supports counters, attr values
-  and rects.
-• New module: CSS::Constants
-• Highly-experimental compute_style function
+Shorthand properties are finally supported.  This means you  can  set
+‘font’ to ‘13px/15px My Font’ and have the ‘font-size’, ‘line-height’,
+and ‘font-family’ properties (among others)  set automatically.  Also,
+invalid property values are now ignored.  How this is done  is  speci-
+fied by objects of the new  CSS::DOM::PropertyParser  class.
 
 
 INSTALLATION
@@ -48,6 +39,7 @@ This module requires perl 5.8.2 or later, and the following modules:
 • constant::lexical
 • Exporter 5.57 or later
 • Encode 2.10 or later
+• Clone 0.09 or later
 
 
 DOCUMENTATION

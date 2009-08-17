@@ -17,6 +17,7 @@ my $rule = (
 		'@font-face { font-family: "foo";src:url(bar) }'
 	)
 )-> cssRules->[0];
+warn $@ if $@;
 
 use tests 1; # isa
 isa_ok $rule, 'CSS::DOM::Rule::FontFace';

@@ -9,6 +9,7 @@ lib/CSS/DOM/Exception.pm
 lib/CSS/DOM/Interface.pm
 lib/CSS/DOM/MediaList.pm
 lib/CSS/DOM/Parser.pm
+lib/CSS/DOM/PropertyParser.pm
 lib/CSS/DOM/Rule/Charset.pm
 lib/CSS/DOM/Rule/FontFace.pm
 lib/CSS/DOM/Rule/Import.pm
@@ -30,6 +31,7 @@ t/charset.t
 t/css-dom-interface.t
 t/css-dom-style.t
 t/css-dom-util.t
+t/css-dom.t
 t/CSS2Properties.t
 t/CSSCharsetRule.t
 t/CSSFontFaceRule.t
@@ -50,6 +52,7 @@ t/hasFeature.t
 t/MediaList.t
 t/parser-rules.t
 t/parser-tokens.t
+t/property-parser.t
 t/Rect.t
 t/RGBColor.t
 t/StyleSheet.t

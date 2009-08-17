@@ -1,6 +1,6 @@
 package CSS::DOM::Parser;
 
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 use re 'taint';
@@ -89,7 +89,7 @@ $token_re = qr/\G(?:
 # tokens, in which case we can provide a $delim_re for matching against a
 # token type string.
 
-sub tokenise { for (''.shift) {
+sub tokenise { warn caller unless defined $_[0];for (''.shift) {
 	my($tokens,@tokens)='';
 	while(/$token_re/gc){
 		my $which = (grep defined $+[$_], 1..$#+)[0];
@@ -182,7 +182,7 @@ $block_re =
 sub tokenise_value { # This is for ::Style to use. It dies if there are
                      # tokens left over.
 	my ($types, $tokens) = tokenise($_[0]);
-	$types =~ /^(?:$any_re|$block_re|\@s?)+\z/ or die
+	$types =~ /^s?(?:$any_re|$block_re|\@s?)*\z/ or die
 		"Invalid property value: $_[0]";
 	return $types, $tokens;
 }
@@ -209,10 +209,9 @@ sub parse { # Don’t shift $_[0] off @_. We’d end up copying it if we did
 					_parse_at_rule($_,$tokens,$sheet);
 			}
 			else {
-				@$stmts != push @$stmts, _parse_ruleset(
-					$_,$tokens,
-				) and $$stmts[-1]
-					->_set_parentStyleSheet($sheet);
+				push @$stmts, _parse_ruleset(
+					$_,$tokens,$sheet
+				);
 			}
 			if($tokcount == @$tokens) {
 				$types and _expected("rule",$tokens)
@@ -231,12 +230,12 @@ sub parse_statement {
 		s/^s//
 			and shift @$tokens;
 		if(/^@/) {
-			$stmt = _parse_at_rule($_,$tokens);
+			$stmt = _parse_at_rule($_,$tokens,$_[1]);
 		}
 		else {
 			#use DDS; Dump [$_,$tokens];
 			$stmt = _parse_ruleset(
-				$_,$tokens,
+				$_,$tokens,$_[1]
 			) or last;
 #			use DDS; Dump $stmt;
 		}
@@ -253,8 +252,11 @@ sub parse_style_declaration {
 #use DDS; Dump tokenise $_[0]; pos $_[0] = $pos;
 	my @tokens = tokenise $_[0];
 	$tokens[0] =~ s/^s// and shift @{$tokens[1]};
-	$@ = (my $style = _parse_style_declaration(@tokens) and!$tokens[0])
-		? '' : shortmess 'Invalid style declaration';
+	$@ = (
+	 my $style = _parse_style_declaration(
+	  @tokens,undef,@_[1..$#_]
+	 ) and!$tokens[0]
+	) ? '' : shortmess 'Invalid style declaration';
 	pos $_[0] = $pos;
 	return $style;
 }
@@ -455,14 +457,15 @@ sub _parse_selector { for (shift) { for my $tokens (shift) {
 	return $selector, \@selector;	
 }}}
 
-# This one takes an optional extra arg; namely, the style decl object to
-# add properties to.
+# This one takes optional extra args:
+#  2) the style decl object to add properties to
+#  3..) extra args to pass to the style obj’s constructor if 2 is undef
 sub _parse_style_declaration { for (shift) { for my $tokens (shift) {
 	# return if there isn’t one
 	/^(?:$any_re|$block_re|[\@;]s?)*(?:}s?|\z)/x
 	 or return;
 
-	my $style = shift||new CSS::DOM::Style;
+	my $style = shift||new CSS::DOM::Style @_;
 
 	{
 		if(s/^is?:s?((?:$any_re|$block_re|\@s?)+)//) {
@@ -701,7 +704,7 @@ CSS::DOM::Parser - Parser for CSS::DOM
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 DESCRIPTION
 

@@ -4,11 +4,13 @@ use ExtUtils::MakeMaker;
 
 my %prq = (
 	 Carp                         => 1.01, # @CARP_NOT
+	 Clone                        =>  .09, # coderefs
 	 constant                     => 1.03, # multiple at once
 	'constant::lexical'           => 0,
 	 Encode                       => 2.1,  # LEAVE_SRC
 	 Exporter                     => 5.57, # use Exporter 'import';
 	 overload                     => 0,
+	 re                           => 0,
 	'Scalar::Util'                => 0,
 	 strict                       => 0,
 	 warnings                     => 0,

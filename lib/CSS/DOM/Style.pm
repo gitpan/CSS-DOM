@@ -1,6 +1,6 @@
 package CSS::DOM::Style;
 
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 use warnings; no warnings qw' utf8';
 use strict;
@@ -11,6 +11,27 @@ use Scalar::Util 'weaken';
 
 # ~~~ use overload fallback => 1, '@{}' => 
 
+# Internal object structure
+#
+# Each style object is a hash ref:
+# {
+#    owner       => $owner_rule,
+#    parser      => $property_parser,
+#    mod_handler => sub { ... },  # undef initially
+#    names       => [...],
+#    props       => {...},
+#    pri         => {...},  # property priorities
+# }
+#
+# The value of an element in the props hash can be either a CSSValue object
+# or an array ref:
+# [
+#   $types,
+#   \@tokens,
+#   [ [$types,\@tokens], ... ]
+# ]
+# The last element is for list properties only.
+
 sub parse {
 	require CSS::DOM::Parser;
 	goto &CSS::DOM::Parser::parse_style_declaration;
@@ -20,7 +41,21 @@ sub new {
 	my($class) = shift;
 
 	my $self = bless {}, $class;
-	@_ and $self->{owner} = shift, weaken $self->{owner};
+	if(@_ == 1) {
+		$self->{owner} = shift;
+	}
+	else {
+		my %args = @_;
+		$self->{owner} = delete $args{owner};
+		$self->{parser}
+		 = delete $args{property_parser};
+	}
+	{
+		$self->{parser} ||= (
+		    ($self->{owner} || next)->parentStyleSheet || next
+		   )->property_parser;
+	}
+	weaken $self->{owner};
 	return $self
 }
 
@@ -40,7 +75,9 @@ sub cssText {
 			@$self{'props','names'} = (), return $out;
 
 		require CSS::DOM::Parser;
-		my $new =CSS::DOM::Parser::parse_style_declaration($css);
+		my $new =CSS::DOM::Parser::parse_style_declaration(
+		 $css, property_parser => $$self{parser}
+		);
 
 		@$self{'props','names'} = @$new{'props','names'};
 		_m($self);
@@ -48,36 +85,76 @@ sub cssText {
 	return $out;
 }
 
-sub getPropertyValue {
-	# ~~~ we don't deal with lists here yet
-	exists +(my $props = shift->{props} || return '')->{
-	  my $name = lc$_[0]
-	}	or return return '';
+sub getPropertyValue { # ~~~ Later I plan to make this return lists of
+                       #     scalars in list context (for list properties).
+	my $self = shift;
+	my $props = $self->{props} || return '';
+	my $name = lc$_[0];
+
+	if(my $spec = $self->{parser}) { serialise: {
+		if(my $p = $spec->get_property($name)) {
+		 if(exists $p->{serialise} and my $s = $p->{serialise}) {
+		   my @p = $spec->subproperty_names($name);
+		   my %p;
+		   for(@p) {
+		    my $v = $self->getPropertyValue($_) ;
+		    length $v or last serialise;
+		    $p{$_}
+		     = $spec->get_property($_)->{default} eq $v ?'':$v;
+		   }
+		   return $s->(\%p);
+		 }
+		}
+	}}
+
+	exists $props->{$name}
+		or return return '';
 	my $val = $props->{$name};
 	return ref $val eq 'ARRAY'
 		? join '', @{$$val[1]} : $val->cssText;
 }
 
 sub getPropertyCSSValue {
-	require CSS::DOM::Value;
-	exists +(my $props = shift->{props} || return)->{
+	my $self = shift;
+	$self->{parser} or return;
+	exists +(my $props = $self->{props} || return)->{
 	  my $name = lc$_[0]
 	}	or return return;
+	ref $$props{$name} eq 'ARRAY' && @{ $$props{$name} } == 3
+	 and return; #list values not yet supported
+	require CSS::DOM::Value;
 	my $valref = \$props->{$name};
 	return ref $$valref eq 'ARRAY'
 		? (
 			$$valref =
 			  new_from_tokens CSS::DOM::Value
 			    @$$valref, 
-		) : $$valref->cssText;
+		) : $$valref;
 }
 
 sub removeProperty {
 	my $self = shift;
-	my $val = $self->getPropertyValue(my $name = lc shift);
-	delete +($self->{props} || return $val)->{$name};
-	@{$$self{names}} = grep $_ ne $name,
-		@{$$self{names} || return $val};
+	my $name = lc shift;
+
+	# Get the value so we can return it
+	my $val;
+	$val = $self->getPropertyValue($name)
+	 if defined wantarray;
+
+	# Get names of subprops if we are dealing with a shorthand prop
+	my @to_delete;
+	if(my $spec = $self->{parser}) {
+		@to_delete = $spec->subproperty_names($name);
+	}
+	@to_delete or @to_delete = $name;
+
+	# Delete the properties
+	for my $name(@to_delete) {
+		delete +($self->{props} || return $val)->{$name};
+		@{$$self{names}} = grep $_ ne $name,
+			@{$$self{names} || return $val};
+	}
+
 	$val;
 }
 
@@ -88,12 +165,37 @@ sub getPropertyPriority {
 sub setProperty {
 	my ($self, $name, $value, $priority) = @_;
 
+	# short-circuit for the common case
+	length $value or $self->removeProperty($name),return;
+
 	require CSS'DOM'Parser;
 	my @tokens = eval { CSS'DOM'Parser'tokenise_value($value); }
-		or die CSS::DOM'Exception->new( SYNTAX_ERR, $@);	
+		or die CSS::DOM'Exception->new( SYNTAX_ERR, $@);
+
+	# check for whitespace/comment assignment
+	$tokens[0] =~ /^s+\z/ and $self->removeProperty($name),return;
 
 	my $props = $$self{props} ||= {};
 	my $pri = $$self{pri} ||= {};
+
+	if(my $spec = $self->{parser}) {
+		my($shorthand, $vals) = $spec->match($name, @tokens)
+			or return;
+		if($shorthand) {
+			while(my($k,$v) = each %$vals) {
+				exists $$props{$k=lc$k}
+				 or push @{$$self{names}}, $k;
+				$$props{$k} = $v;
+				$$pri{$k} = $priority;
+			}
+			return;
+		}
+		elsif(ref $vals eq 'REF') {
+			push @tokens, $$vals;
+		}
+		else { @tokens = @$vals; }
+	}
+
 	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
 	$$props{$name} = \@tokens;
 	$$pri{$name} = $priority;
@@ -113,17 +215,45 @@ sub parentRule {
 
 sub _set_property_tokens { # private
 	my ($self,$name,$types,$tokens) = @_;
-	my $props = $$self{props} ||= {};
-	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
-	my $pri = $$self{pri} ||={};
+
+	# Parse out the priority first
+	my $priority;
 	if($types =~ /(s?(ds?))i\z/ and $tokens->[$-[2]] eq '!') {
 		$types =~ s///;
-		$pri->{$name} = unescape pop @$tokens;
+		$priority = unescape pop @$tokens;
 		pop @$tokens for 1..length $1;
 	} else {
-		$pri->{$name} = '';
+		$priority = '';
 	}
-	$$props{$name} = [$types,$tokens];
+
+	# Get the prop & priority hashes
+	my $props = $$self{props} ||= {};
+	my $pri = $$self{pri} ||={};
+
+	# See if we need to parse the value
+	my $list;
+	if(my $spec = $self->{parser}) {
+		my($shorthand, $vals) = $spec->match($name,$types,$tokens)
+			or return;
+		if($shorthand) {
+			while(my($k,$v) = each %$vals) {
+				exists $$props{$k=lc$k}
+				 or push @{$$self{names}}, $k;
+				$$props{$k} = $v;
+				$$pri{$k} = $priority;
+			}
+			return;
+		}
+		elsif(ref $vals eq 'REF') {
+			$list = $$vals;
+		}
+		else { ($types,$tokens) = @$vals; }
+	}
+
+	# Assign the value & priority
+	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
+	$$props{$name} = [$types,$tokens,$list||()];
+	$$pri{$name} = $priority;
 }
 
 
@@ -176,7 +306,7 @@ CSS::DOM::Style - CSS style declaration class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =head1 SYNOPSIS
 
@@ -206,11 +336,17 @@ the CSSStyleDeclaration DOM interface.
 
 =item CSS::DOM::Style::parse( $string )
 
+=item CSS::DOM::Style::parse( $string, property_parser => $parser )
+
 This parses the C<$string> and returns a new style declaration 
 object. This is useful if you have text from an HTML C<style> attribute,
 for instance.
 
+For details on C<$property_parser>, see L<CSS::DOM::PropertyParser>.
+
 =item new CSS::DOM::Style $owner_rule
+
+=item new CSS::DOM::Style owner => $owner_rule, property_parser => $p
 
 You don't normally need to call this, but, in case you do, here it is.
 C<$owner_rule>, which is optional, is expected to be a L<CSS::DOM::Rule>
@@ -285,5 +421,7 @@ not part of the DOM standard.)
 L<CSS::DOM>
 
 L<CSS::DOM::Rule::Style>
+
+L<CSS::DOM::PropertyParser>
 
 L<HTML::DOM::Element>

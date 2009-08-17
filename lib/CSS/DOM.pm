@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -26,6 +26,7 @@ use constant::lexical {
 	medi => 5,
 	fetc => 6, # url fetcher
 	prsh => 7, # parent sheet
+	prpp => 8, # property parser
 };
 
 
@@ -38,14 +39,17 @@ sub new {
 	if(defined(my $arg = delete $args{url_fetcher})) {
 		$self->[fetc] = $arg;
 	}
+	$self->[prpp] = delete $args{property_parser};
 	$self;
 }
-# objectionable method
-sub _fetcher {
+
+# objectionable methods
+sub url_fetcher {
 	my $old = (my$ self = shift)->[fetc];
 	$ self -> [ fetc ] = shift if @ _ ;
 	$old
 }
+sub property_parser { shift->[prpp] }
 
 
 # FUNCTIONS
@@ -82,9 +86,9 @@ sub compute_style {
 	# ties originate from a style attribute. ‘Style sheet’ is
 	# as follows:
 	#  "\0") user agent normal declarations
-	#  "\1") user agent !important declarations
-	#  "\2") user normal declarations
-	#  "\3") author normal     "
+	#  "\1") user normal declarations
+	#  "\2") author normal     "
+	#  "\3") user agent !important declarations
 	#  "\4") author !important "
 	#  "\5") user      "       "
 
@@ -101,17 +105,17 @@ sub compute_style {
 	my @sheets;
 	if(defined $args{ua_sheet}) {
 		push @normal_spec, chr 0;
-		push @important_spec, chr 1;
+		push @important_spec, chr 3;
 		push @sheets, delete $args{ua_sheet};
 	}
 	if(defined $args{user_sheet}) {
-		push @normal_spec, chr 2;
+		push @normal_spec, chr 1;
 		push @important_spec, chr 5;
 		push @sheets, delete $args{user_sheet};
 	}
 	if(defined $args{author_sheets}) {
 		my $s = delete $args{author_sheets};
-		push @normal_spec, (chr 3) x @$s;
+		push @normal_spec, (chr 2) x @$s;
 		push @important_spec, (chr 4) x @$s;
 		push @sheets, @$s;
 	}
@@ -225,12 +229,14 @@ sub insertRule { # This is supposed to raise an HIERARCHY_REQUEST_ERR if
 	my ($at,$rule);
 	{
 		local *@;
-		$rule = CSS::DOM::Parser::parse_statement($rule_string);
+		$rule = CSS::DOM::Parser::parse_statement(
+		 $rule_string,$self
+		);
 		$at = $@
 	}
 	$at and die new CSS::DOM::Exception SYNTAX_ERR, $at;
 
-	$rule->_set_parentStyleSheet($self);
+#	$rule->_set_parentStyleSheet($self);
 
 	my $list = $self->cssRules; # cssRules takes care of ||=
 	splice @$list, $index, 0, $rule;
@@ -273,7 +279,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -310,11 +316,37 @@ This is an alpha version. If you could please test it and report any bugs
 
 =head1 DESCRIPTION
 
-This module provides the CSS-specific interfaces described in the W3C DOM
+This set of modules provides the CSS-specific interfaces described in the
+W3C DOM
 recommendation.
 
 The CSS::DOM class itself implements the StyleSheet and CSSStyleSheet DOM
 interfaces.
+
+This set of modules has two modes:
+
+=over
+
+=item 1
+
+It can validate property values,
+ignoring those that are invalid (just like a real web browser), and support shorthand
+properties. This means you can set font to '13px/15px My Font' and have the 
+font-size, line-height, and font-family properties (among others) set automatically. Also, C<color: green; color: kakariki> will assign 'green' 
+to the color
+property, 'kakariki' not being a recognised color value.
+
+=item 2
+
+It can
+blithely accept all property assignments as being valid. In the case of
+C<color: green; color kakariki>, 'kakariki' will be assigned, since it overrides the previous
+assignment.
+
+=back
+
+These two modes are controlled by the C<property_parser> option to the
+constructors.
 
 =head1 CONSTRUCTORS
 
@@ -334,9 +366,20 @@ the style sheet piece by piece, instead of parsing a block of CSS code.
 =back
 
 You can pass named arguments to both of those. C<parse> accepts all of
-them; C<new> understands only the first:
+them; C<new> understands only the first two, C<property_parser> and
+C<url_fetcher>.
 
 =over
+
+=item property_parser
+
+Set this to a L<PropertyParser|CSS::DOM::PropertyParser> object to specify
+which properties are supported and how they are parsed.
+
+If this option is not specified or is set to C<undef>, all property
+values are treated as valid.
+
+See L<CSS::DOM::PropertyParser> for more details.
 
 =item url_fetcher
 
@@ -404,7 +447,7 @@ is to be found, UTF-8 is assumed.
 =head1 SYNTAX ERRORS
 
 The two constructors above, and also
-L<C<CSS::DOM::Style::parse|CSS::DOM::Style/parse>, set C<$@> to the empty 
+L<C<CSS::DOM::Style::parse>|CSS::DOM::Style/parse>, set C<$@> to the empty 
 string upon success. If 
 they
 encounter a syntax error, they set C<$@> to the error and return an object
@@ -510,7 +553,7 @@ list.
 
 =item insertRule ( $css_code, $index )
 
-Parses the rule contained in the C<$css_code>, inserting it the style
+Parses the rule contained in the C<$css_code>, inserting it in the style
 sheet's list of rules at the given C<$index>.
 
 =item deleteRule ( $index )
@@ -546,6 +589,14 @@ method.
 
 Like C<set_ownerNode>, but for C<href>.
 
+=item property_parser
+
+=item url_fetcher
+
+These two both return what was passed to the constructor. The second one,
+C<url_fetcher> also allows an assignment, but this is not propagated to
+sub-rules and is intended mainly for internal use.
+
 =back
 
 =head1 FUNCTIONS
@@ -562,16 +613,19 @@ B<Warning:> This is still highly experimental and crawling with bugs.
 
 This computes the style for a given HTML element. It does not yet calculate
 actual measurements (e.g., converting percentages to pixels), but simply
-applies the cascading rules and selectors. Shorthand properties are not yet 
-supported, which renders this function quite useless. Pseudo-classes are
-not supported either (but pseudo-elements are).
+applies the cascading rules and selectors. Pseudo-classes are
+not yet supported (but pseudo-elements are).
 
-The CSS 2.1 specification does not specify the handling of user-agent 
-important rules. Since user agent sheets passed to C<compute_style> are
-themselves CSS::DOM objects, they can support them, of course. So 
-C<compute_style> ignores the priority of such declarations when comparing
-them with style sheets in another category, but honours them in relation to
-other user-agent declarations.
+The precedence rules for normal vs important declarations in the CSS 2 
+specification are used. (CSS 2.1 is unclear.) The precedence is as follows,
+from lowest to highest:
+
+ user agent normal declarations
+ user normal declarations
+ author normal     "
+ user agent !important declarations
+ author !important "
+ user      "       "
 
 The C<%options> are as follows. They are all optional except for 
 C<element>.
@@ -613,6 +667,8 @@ with one or two colons (the way Firefox requires it).
 
 =back
 
+The 
+
 =back
 
 =head1 CLASSES AND DOM INTERFACES
@@ -627,8 +683,7 @@ machine-readable list of standard methods.)
   Class Inheritance Hierarchy  Interfaces
   ---------------------------  ----------
   
-  CSS
-      CSS::DOM                 StyleSheet, CSSStyleSheet
+  CSS::DOM                     StyleSheet, CSSStyleSheet
   ::Array
       ::MediaList              MediaList
       ::StyleSheetList         StyleSheetList
@@ -705,11 +760,23 @@ L<constant::lexical>
 
 L<Encode> 2.10 or higher
 
+L<Clone> 0.09 or higher
+
 =head1 BUGS
 
-CSS 'shorthand' properties (such as 'font') are not supported yet. Right
-now they are treated as their own properties, unrelated to those they are
-short for.
+L<CSS::DOM::Style's C<getPropertyCSSValue>
+method|CSS::DOM::Style/getPropertyCSSValue> produces incorrect value
+objects for unquoted font and voice names. They are supposed to be strings,
+but are currently either identifiers or custom values. For list properties,
+it currently treats them as custom values, for multiple items, or as single
+values, both of which are incorrect.
+
+The parser has not been updated to conform to the April 2009 revision of 
+the CSS 2.1 candidate recommendation. Specifically, unexpected closing 
+brackets are not ignored, but cause syntax errors; and @media rules 
+containing unrecognised statements are themselves currently treated as 
+unrecognised (the unrecognised inner statements should be ignored, 
+rendering the outer @media rule itself valid).
 
 To report bugs, please e-mail the author.
 
