@@ -7,8 +7,7 @@ sub tests'VERSION { $tests += pop };
 use Test::More;
 plan tests => $tests;
 
-use tests 1;
-use_ok "CSS::DOM::Interface";
+use CSS::DOM::Interface ":all";
 
 use tests 2;
 ok *CSS::DOM::Interface{HASH}, 'the hash is there';
@@ -61,3 +60,15 @@ ok exists $CSS::DOM::Interface{CSSStyleDeclaration}{length},
 ok exists $CSS::DOM::Interface{CSSValue}{cssValueType}, 'cssValueType';
 ok exists $CSS::DOM::Interface{CSSValue}{cssText}, 'Value->cssText';
 
+use tests 13; # changes in 0.08
+ok exists $CSS::DOM::Interface{CSSPrimitiveValue}{$_},
+ "primitive value ->$_"
+   for qw<
+    top right bottom left red green blue alpha primitiveType
+   >;
+is $CSS::DOM::Interface{CSSPrimitiveValue}{getFloatValue}, METHOD | NUM,
+ 'getFloatValue';
+ok exists $CSS::DOM::Interface{CSSValueList}{$_},
+ "list value ->$_"
+   for <item length>;
+ok $CSS::DOM::Interface{CSSValueList}{_array};

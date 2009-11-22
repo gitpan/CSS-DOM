@@ -1,6 +1,6 @@
 package CSS::DOM::Util;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 
@@ -70,8 +70,6 @@ sub unescape_str($) {
 	unescape substr $_[0], 1, -1;
 }
 
-=end comment
-
                               **__END__**
 
 =head1 NAME
@@ -80,13 +78,17 @@ CSS::DOM::Util - Utility functions for dealing with CSS tokens
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head SYNOPSIS
 
   use CSS::DOM::Util ':all';
   # or:
-  use CSS::DOM::Util qw[ unescape escape str2ident urltoken2str ];
+  use CSS::DOM::Util qw[
+    escape unescape
+    escape_ident unescape_url
+    escape_str unescape_str
+  ];
 
 =head1 DESCRIPTION
 

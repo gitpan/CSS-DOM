@@ -1,9 +1,26 @@
 package CSS::DOM::PropertyParser;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
+
+use constant 1.03 (); # multiple
+use CSS::DOM'Constants ':primitive', ':value';
+use CSS'DOM'Util<unescape unescape_str unescape_url>;
+
+use constant'lexical old_perl => $] < 5.01;
+
+# cygwin includes perl 5.10.0@34065 (maint branch, not blead; aka ee3a906),
+# which has a bug affecting  $^N  (perl bug #56194).  We have a workaround,
+# but it requires more CPU,  so we only enable it on naughty  versions  of
+# perl (or,  rather,  perl versions installed  by  naughty  vendors).
+use constant'lexical naughty_perl => scalar(
+ "ax" =~ /(.)((??{"."}))/, $^N eq 'a'
+);
+
+*s2c = *CSS'DOM'Constants'SuffixToConst;
+our %s2c;
 
 our %compiled; # compiled formats
 our %subcompiled; # compiled sub-formats
@@ -46,28 +63,8 @@ sub clone {
  return Clone'clone($_[0]);
 }
 
-
-# sub match:
-
-# Args 1..$#_ are passed straight to _prep_val. They consist of either just
-# the unparsed value or ($tokens,$types) as returned by tokenise().
-
-# The retval is two args: $shorthand, $val
-# If $shorthand is true, the $val is
-# {
-#   subprop  => $val,
-#   subprop2 => $val2,
-#   etc.
-# }
-# Each val inside the hash, or the $val if $shorthand is false, is a refe-
-# rence to a types/tokens array for a simple property or a reference to a
-# reference to an array of values for a list property.
-
-# The interface is going to change: the arguments, in order to make sub-
-# classing sensible; and the retval, in order to support CSSValue objects.
-# The new interface is sketched out in a POD comment further down (search
-# for the second occurrence of ‘=item match’).
-
+# The interface for match is documented in a POD comment further down
+# (search for the second occurrence of ‘=item match’).
 sub match { SUB: {
  my ($self,$property) = (shift,shift);
  return unless exists $self->{$property};
@@ -94,50 +91,61 @@ sub match { SUB: {
 
  # Check for inherit
  if($types eq 'i' and $prepped->[0] eq 'inherit') {
-   my $tt_array = [$types, $tokens];
+  my @arg_array = (
+   $$tokens[0],'CSS::DOM::Value', type => CSS_INHERIT, css => $$tokens[0]
+  );
   if($shorthand) {
-   return 1, { map +($_ => $tt_array), @subproperties };
+   return { map +($_ => \@arg_array), @subproperties };
   }
-  else { return 0, $tt_array }
+  else { return @arg_array }
  }
 
  # Localise other vars used by the hairy regexps
- local our (@Match,%Match);
+ local our (@Match,%Match,@valtypes,@List);
  local our $Self = $self;
 
- # Prepare the format pattern
- my $format = $$spec{format};
- my $pattern = $compiled{$format} ||= _compile_format($format);
-
- # Also compile the formats of the sub-properties, something we can’t do
+ # Compile the formats of the sub-properties,  something we  can’t  do
  # during the pattern match, as compilation requires regular expressions
- # and perl’s re engine is not reëntrant.
+ # and perl’s re engine is not reëntrant.  This has to come before the for
+ # mat for this property,  in case it relies on  list-style-type.  We  use
+ # (??{...}) to pick it up,  but that is too buggy in perl 5.8.x, so, for
+ # old perls,  we compile it straight in.  Consequently we also have to
+ # ‘un-cache’ any compiled format containing <counter>, in case it is
+ #  shared with another parser object with another definition  for
+ #  list-style-type.
+ my $format = $$spec{format};
  for(
   @subproperties,
-  $format =~ '<counter>' ? 'list-style-type' : ()
+  $format =~ '<counter>'
+   ? scalar(old_perl && delete $compiled{$format}, 'list-style-type')
+   : ()
  ) {
   next unless exists $self->{$_};
-  my $format = $self->{$_}{format};
+  my $format = $self->{$_}{format}; 
+  old_perl and $compiled{$format} and delete $compiled{$format};
   $compiled{$format} ||= _compile_format($format)
  }
+
+ # Prepare this property’s format pattern
+ my $pattern = $compiled{$format} ||= _compile_format($format);
 
  # Do the actual pattern matching
  $types =~ /^$pattern\z/ or return;
 
-#use DDS; Dump \@Match if $property =~ /clip/;
+#use DDS; Dump $types,$tokens,\@valtypes;
 #use DDS; Dump \%Match if $property =~ /clip/;
  # Get the values, convert them into CSSValue arg lists and return them
- my $retval;
  if($shorthand) {
-  $retval = {%Match};
+  my $retval = {%Match};
   my $subprops = exists $spec->{properties} ? $spec->{properties} : undef;
-  for(@subproperties) {
-   # We record which captures have been ‘spaced out’ already, since these
-   # are sometimes shared between properties.
-   my @spaced_out;
 
+  # We record which captures have been turned into arg lists already,
+  # since these are sometimes shared between properties.
+  my @arglistified;
+
+  for(@subproperties) {
    if(exists $retval->{$_}) {
-    @{ $retval->{$_} } = _space_out( @{ $retval->{$_} } );
+    @{ $retval->{$_} } = _make_arg_list( @{ $retval->{$_} } );
    }
    else {
     my $set;
@@ -145,8 +153,8 @@ sub match { SUB: {
      for my $c( @{ $subprops->{$_} } ) { # capture nums
       # find the first one that matched something
       if( $Match[$c] and length $Match[$c][0] ) {
-       @{ $Match[$c] } = _space_out( @{ $Match[$c] } )
-        unless $spaced_out[$c]++;
+       @{ $Match[$c] } = _make_arg_list( @{ $Match[$c] } )
+        unless $arglistified[$c]++;
        ++$set;
        $retval->{$_} = $Match[$c];
        last;
@@ -155,29 +163,138 @@ sub match { SUB: {
     }
     if(!$set) {
      # use default value
-     require CSS::DOM::Parser;
-     $retval->{$_} = [
-      CSS::DOM::Parser'tokenise ($self->{$_}{default})
-     ];
+# ~~~ Should we cache this? (If we do, we need to distinguish between
+#    ‘content: Times New Roman’ and ‘font-family: Times New Roman’.)
+     my $default = $self->{$_}{default};
+     no warnings 'uninitialized';
+     $retval->{$_} = length $default
+      ? [
+         $self->match($_, $default)
+        ]
+      : ""
     }
    }
   }
+  $retval;
  }
  else { # simple
-  if(exists $$spec{list} && $$spec{list}) {
-#   $retval = \[map [_space_out(@$_)], @Match[1..$#Match]];
-   $retval = \[@Match];
-  }
-  else {
-   $retval = [_space_out($types, $tokens)];
-  }
+   my $css = join "", @{ (_space_out($types,$tokens))[1] };
+#use DDS; Dump \@List  if exists $$spec{list} && $$spec{list};
+   return _make_arg_list(
+            $types, $tokens, 
+            exists $$spec{list} && $$spec{list}
+             ? \@List
+             : (\@valtypes, $prepped)
+          );
  }
-
- $shorthand, $retval
 }}
+
+sub _make_arg_list {
+ my($types, $tokens) = (shift,shift);
+ my($stypes,$stokens) = _space_out($types, $tokens);
+ my $css = join "", @$stokens;
+ if(@_ == 1) { # list property
+  my $list = shift @'_;
+  my $sep = @$list <= 1 ? '' : do {
+   my $range_start = $$list[0][4];
+   my $range_end = $$list[1][4] - length($$list[1][4]) - 1;
+   my(undef,$stokens) = _space_out(
+    substr($types, $range_start-1, $range_end-$range_start+3),
+    [@$tokens[$range_start-1...$range_end+1]]
+   );
+   join "", @$stokens[1...$#$stokens-1];
+  };
+  return $css, "CSS::DOM::Value::List",
+   separator => $sep, css => $css,
+   values => [ map {
+    my @args = _make_arg_list(
+                   @$_[0...3]
+    );
+    shift @args, shift @args;
+    \@args
+   } @$list ];
+ }
+ else{
+  my($valtypes, $prepped) = @_;
+  my @valtypes = grep defined, @$valtypes;
+  if(@valtypes != 1 and
+     $valtypes[0] != CSS_COUNTER || do { # The code in this block is to
+      no warnings 'uninitialized';       # distinguish between counter(id,
+      my $found;                         # id) (which is a CSS_COUNTER) and
+      for(@valtypes[1...$#valtypes-1]) { # counter(id) id (CSS_CUSTOM).
+       $_ == -1 and ++$found, last; # -1 is a special marker for the end of
+      }                             #  a counter
+      $found
+     }) {
+   return $css => "CSS::DOM::Value", type => CSS_CUSTOM, value => $css;
+  }
+  my $type = shift @valtypes;
+  return $css, "CSS::DOM::Value::Primitive",
+   type => $type, css => $css,
+   value =>
+      $type == CSS_NUMBER || $type == CSS_PERCENTAGE || $type == CSS_EMS ||
+      $type == CSS_EXS || $type == CSS_PX || $type == CSS_CM ||
+      $type == CSS_MM || $type == CSS_IN || $type == CSS_PT ||
+      $type == CSS_PC || $type == CSS_DEG || $type == CSS_RAD ||
+      $type == CSS_GRAD || $type == CSS_MS || $type == CSS_S ||
+      $type == CSS_HZ || $type == CSS_KHZ
+       ? $css
+    : $type == CSS_STRING
+       ? unescape_str $css
+    : $type == CSS_IDENT
+       ? unescape $css
+    : $type == CSS_URI
+       ? unescape_url $css
+    : $type == CSS_COUNTER
+       ? [
+          $$prepped[$types =~ /i/, $-[0]],
+          $types =~ /'/ ? $$prepped[$-[0]] : undef,
+          $types =~ /i.*?i/ ? $$prepped[$+[0]-1] : undef,
+         ]
+    : $type == CSS_RGBCOLOR
+       ? substr $types, 0, 1, eq '#'
+         ? $$prepped[0]
+         : do{
+            my @vals;
+            while($types =~ /([%D1])/g) {
+             push @vals, [
+              type =>
+                 $1 eq '%' ? CSS_PERCENTAGE
+               : $1 eq 'D' ? $s2c{unescape do{
+                              ($$tokens[$-[1]] =~ '(\D+)')[0]
+                             }}
+               :             CSS_NUMBER,
+              value => $1,
+              css => $1,
+             ]
+            }
+            \@vals
+           }
+    : $type == CSS_ATTR
+       ? $$prepped[$types =~ /i/, $-[0]]
+    : $type == CSS_RECT
+       ? [
+          map scalar(
+           $types =~ /\G.*?(d?([D1])|i)/g,
+           $1 eq 'i'
+            ? [type => CSS_IDENT, value => 'auto'] #$$prepped[$-[1]]]
+            : [
+               type =>
+                $2 eq 'D'
+                 ? $s2c{unescape do{($$tokens[$-[2]] =~ '(\D+)')[0]}}
+                 : CSS_NUMBER,
+               value => join "", @$tokens[$-[1]...$+[1]-1]
+              ]
+          ), 1...4
+         ]
+    : die __PACKAGE__ . " internal error: unknown type: $type"
+ }
+}
 
 sub _space_out {
  my($types,$tokens) = @_;
+Carp'cluck() if ref $tokens ne 'ARRAY';
+ $tokens = [@$tokens];
  my @posses;
  $types =~ s/(?<=[^(f])(?![),]|\z)/
   if($tokens->[-1+pos $types] =~ m=^[+-]\z=) {
@@ -192,7 +309,7 @@ sub _space_out {
 }
 
 # Defined further down, to keep the hairiness out of the way.
-my $colour_names_re;
+my($colour_names_re, $system_colour_names_re);
 
 sub _prep_val {
  defined &unescape or
@@ -222,10 +339,12 @@ sub _prep_val {
   if($type =~ /[if#]/) {
    $thing = lc unescape($$tokens[$_]);
    if($type eq 'i') {
-    $thing =~ /^$colour_names_re\z/o and $alt_type[$_] = 'c';
+    if($thing =~ /^$colour_names_re\z/o) { $alt_type[$_] = 'c' }
+    elsif($thing =~ /^$system_colour_names_re\z/o) { $alt_type[$_] = 's' }
    }
    elsif($type eq '#') {
     $thing =~ /^#(?:[0-9a-f]{3}){1,2}\z/ and $alt_type[$_] = 'c';#olour
+# ~~~ What about escapes?
    }
   }
   elsif($type eq 'D') { # dimension
@@ -249,8 +368,27 @@ sub _prep_val {
  return ($types,$tokens,\@prepped,\@alt_type);
 }
 
+
+# Various bits and pieces for _compile_format’s use
+
 our $Fail = qr/(?!)/; # avoid recompiling the same sub-regexp doz-
                       # ens of times
+
+# This optionally matches a sign
+my $sign = '(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?';
+
+# These $type_ expressions save the current value type in @valtypes.
+my $type_is_ # generic one to stick inside (?{...})
+ =  '$valtypes[$#valtypes='
+              . (naughty_perl ? '$pos[-1]' : 'pos()-length$^N')
+  . ']=';
+my $type_is_dim_or_number
+ = '(?{
+     $valtypes[
+      $#valtypes=' . (naughty_perl ? '$pos[-1]' : 'pos()-length$^N') . '
+     ]
+      = $$prepped[pos()-1] ? $s2c{ $$prepped[pos()-1] } : CSS_NUMBER
+    })';
 
 sub _compile_format {
  my $format = shift;
@@ -266,8 +404,12 @@ sub _compile_format {
  #
  # The chars ? * + | are left as is (except when | is doubled).
  #
- # <...> thingies are replaced with simple regexps that match the type
- # and then check with a re-eval to see whether the token matches.
+ # <...>  thingies are replaced with simple regexps that  match  the  type
+ # and then check with a re-eval to see whether the token matches.  Then we
+ # have another re-eval that records the type of match in @valtypes,  so we
+ # can distinguish between ‘red’ matched by  <ident>  (counter-reset: red),
+ # ‘red’ matched by <colour> (color: red) and ‘red’ matched by <str/words>
+ # (font-family: red).
  #
  # Identifiers are treated similarly.
  #
@@ -297,11 +439,28 @@ sub _compile_format {
  # @match holds arrays of captures, $match[-1] being the current array.
  # When the re exits, @{ $match[-1] } is copied into @Match. Subpatterns
  # push onto @match upon entry and pop it on exit.
+# ~~~ Actually, it seems we don’t currently pop it, but all tests pass. Why
+#     is this?
+ #
+ # @list is similar to @match, but it holds all captured matches in the
+ # order they matched, skipping those that did not match. It includes mul-
+ # tiple elements for quantified captures (that is,  if they matched multi-
+ # ple times).  @match,  on the other hand,  is indexed by capture  number,
+ # like @-, et al.  In other words, if we match ‘'rhext' 'scled'’ against
+ # ‘(<ident>)? (<string>)+’, we have:
+ #   @match:  undef (elem 0 is always undef), undef, 'scled'
+ #   @list:  'rhext', 'scled'
  #
  # %match holds named captures (sub-properties) directly (no extra locali-
  # sation necessary), which are then copied to %Match afterwards.
+ #
+ # In cygwin’s perl (see the definition of naughty_perl, above). We work
+ # around the unreliability of $^N by pushing the current pos onto  @pos
+ # before a sub-pattern or capture,  and popping it afterwards.  We  use
+ # $pos[-1] instead of pos()-length$^N (for the beginning of the capture).
 
- my $pattern = $no_match_stuff ? '' : '(?{local @match=(@match,[])})(?:';
+ my $pattern = $no_match_stuff
+  ? '' : '(?{local @match=(@match,[]); local @list=(@list,[])})(?:';
                         # We add (?: to account for top-level alternations.
 
  my @group_start = length $pattern; # holds the position within $pattern of
@@ -316,6 +475,13 @@ sub _compile_format {
   $format =~ /(\s+)|(\|\|)|<([^>]+)>|([a-z-]+)|([0-9]+)|'([^']+)'|(.)/g
  ) {
   next if $1;  # ignore whitespace
+
+  # cygwin hack:
+  use constant'lexical {  # re-evals for before and after captures
+   cap_start => naughty_perl ? '(?{local @pos=(@pos,pos)})' : '',
+   cap_end   => naughty_perl ? '(?{local @pos=@pos; --$#pos})' : '',
+  };
+
   if($2) { # ||
    push @{ $permut_marker[-1] }, length $pattern;
   }
@@ -324,66 +490,88 @@ sub _compile_format {
    # (‘ab’ has to become ‘(?:ab)’ so that ‘ab?’ becomes ‘(?:ab)?’.)
    $pattern .=
      $3 eq 'angle'      ?
-      '(?:(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?[D1](?(?{
+      "(?:($sign\[D1])" . cap_start . '(?(?{
         $$alt_types[pos()-1]eq"a"||$$prepped[pos()-1]eq 0
-       })|(?!)))'
+       })|(?!))' . $type_is_dim_or_number . cap_end .")"
    : $3 eq 'attr'       ?
-      '(?:f(?(?{$$prepped[pos()-1]eq"attr("})|(?!))i\))'
+      '(?x:' . cap_start . '(
+         f(?(?{$$prepped[pos()-1]eq"attr("})|(?!))i\)
+       )' . "(?{ $type_is_ CSS_ATTR })" . cap_end . ")"
    : $3 =~ /^colou?r\z/ ?
-      '(?x:
-        [i#](?(?{$$alt_types[pos()-1]eq"c"})|(?!))
+      "(?x:" . cap_start . "
+        ([i#](?(?{
+          \$\$alt_types[pos()-1]eq 'c'||\$\$alt_types[pos()-1]eq 's'
+        })|(?!))) (?{ $type_is_ (
+                   \$\$alt_types[pos()-1]eq 'c' ? CSS_RGBCOLOR : CSS_IDENT
+                  ) })
          |
-        f(?(?{$$prepped[pos()-1]eq"rgb("})|(?!))
-         (?: (?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?1(?:,(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?1){2} | (?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?%(?:,(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?%){2} )
-        \)
-         |
-        f(?(?{$$prepped[pos()-1]eq"rgba("})|(?!))
-         (?: (?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?1(?:,(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?1){2} | (?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?%(?:,(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?%){2} ),(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?1
-        \)
-       )'
+        (f
+          (?:
+           (?(?{\$\$prepped[pos()-1]eq 'rgb('})|(?!))
+           (?: $sign 1(?:,$sign 1){2} | $sign%(?:,$sign%){2} )
+            |
+           (?(?{\$\$prepped[pos()-1]eq 'rgba('})|(?!))
+           (?: $sign 1(?:,$sign 1){2} | $sign%(?:,$sign%){2} ),$sign 1
+          )
+        \\)) (?{ $type_is_ CSS_RGBCOLOR })" . cap_end . "
+       )"
 
    # <counter> represents the following four:
    #  counter(<identifier>)
    #  counter(<identifier>,'list-style-type')
    #  counters(<identifier>,<string>)
    #  counters(<identifier>,<string>,'list-style-type')
-   : $3 eq 'counter'    ?
-      q*(?x:f(?{$$prepped[pos()-1]})
-          (?(?{$^R eq "counter("})
-            i(?:,(??{
+   : $3 eq 'counter'    ? do {
+      our $Self;
+      my $list_style_type = old_perl
+       ? exists $$Self{"list-style-type"}
+         ? $compiled{$$Self{"list-style-type"}{format}}
+            ||= _compile_format($$Self{"list-style-type"}{format})
+         : '(?!)'
+       : '(??{
              exists $$Self{"list-style-type"}
              ? $compiled{$$Self{"list-style-type"}{format}}
              : $Fail
-            }))?
+            })'
+      ;
+      q*(?x:* . cap_start . q*(f(?{$$prepped[pos()-1]})
+          (?(?{$^R eq "counter("})
+            i(?:,* . $list_style_type . q*)?
              |
             (?(?{$^R eq "counters("})
-              i,'(?:,(??{
-               exists $$Self{"list-style-type"}
-               ? $compiled{$$Self{"list-style-type"}{format}}
-               : $Fail
-              }))?
+              i,'(?:,* . $list_style_type . q*)?
                |
               (?!)
             )
           )
         \))*
+        . "(?{ $type_is_ CSS_COUNTER;"
+           . ' $valtypes[$#valtypes=pos()-1] = -1})' # -1 is a special
+           . cap_end . ')'                           # marker for the end
+     }                                               # of a counter
    : $3 eq 'frequency'  ?
-      '(?:(?:d(?(?{
+      '(?:' . cap_start . '((?:d(?(?{
          $$tokens[pos()-1]eq"+"||$$tokens[-1+pos]eq"-"&&$$tokens[pos]eq 0
        })|(?!)))?[D1](?(?{
         my$p=$$prepped[pos()-1];$p eq"hz"||$p eq"khz"||$p eq 0
-       })|(?!)))'
-   : $3 eq 'identifier' ? 'i'
+       })|(?!)))' . $type_is_dim_or_number . cap_end . ")"
+   : $3 eq 'identifier' ?
+      "(?:" . cap_start . "(i)(?{ $type_is_ CSS_IDENT })" . cap_end . ")"
    : $3 eq 'integer'    ?
-      '(?:1(?(?{index$$tokens[pos()-1],".",==-1})|(?!)))'
+      '(?:' . cap_start . '(1(?(?{index$$tokens[pos()-1],".",==-1})|(?!)))'
+      . "(?{ $type_is_ CSS_NUMBER })" . cap_end . ")"
    : $3 eq 'length'     ?
-      '(?:(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?[D1](?(?{
+      "(?:" . cap_start . "($sign\[D1])" . '(?(?{
         $$alt_types[pos()-1]eq"l"||$$prepped[pos()-1]eq 0
-       })|(?!)))'
-   : $3 eq 'number'     ? '1'
-   : $3 eq 'percentage' ? '(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?%'
+       })|(?!))' . $type_is_dim_or_number . cap_end . ")"
+   : $3 eq 'number'     ?
+      "(?:" . cap_start . "(1)(?{ $type_is_ CSS_NUMBER })" . cap_end . ")"
+   : $3 eq 'percentage' ?
+       "(?:" . cap_start
+        . "($sign%)(?{ $type_is_ CSS_PERCENTAGE })"
+      . cap_end . ")"
    : $3 eq 'shape'      ?
-      q*(?x:f
+      q*(?x:* . cap_start . q*(f
           (?(?{$$prepped[pos()-1] eq "rect("})
             (?:
              (?:
@@ -397,33 +585,60 @@ sub _compile_format {
              |
             (?!)
           )
-        \))*
-   : $3 eq 'string'     ? "'"
-   : $3 eq 'str/words'  ? "(?:'|i+)"
+        \))* . "(?{ $type_is_ CSS_RECT })" . cap_end . ")"
+   : $3 eq 'string'     ?
+      "(?:" . cap_start . "(')(?{ $type_is_ CSS_STRING })" . cap_end . ")"
+   : $3 eq 'str/words'  ?
+        "(?:" . cap_start
+        . "('|i+)(?{ $type_is_ CSS_STRING })"
+      . cap_end . ")"
    : $3 eq 'time'       ?
-      '(?:(?:d(?(?{$$alt_types[pos()-1]eq"+"})|(?!)))?[D1](?(?{
+      "(?:" . cap_start . "($sign\[D1])" . '(?(?{
         my$p=$$prepped[pos()-1];$p eq"ms"||$p eq"s"||$p eq 0
-       })|(?!)))'
-   : $3 eq 'url'        ? "u"
+       })|(?!))' . $type_is_dim_or_number . cap_end . ")"
+   : $3 eq 'url'        ?
+      "(?:" . cap_start . "(u)(?{ $type_is_ CSS_URI })" . cap_end . ")"
    : die "Unrecognised data type in property format: <$3>";
   }
   elsif($4) { # identifier
-   $pattern .= '(?:i(?(?{$$prepped[-1+pos]eq"' . $4 . '"})|(?!)))';
+   $pattern .=
+     '(?:' . cap_start
+       . '(i)(?(?{$$prepped[-1+pos]eq"' . $4 . '"})|(?!))'
+       . "(?{ $type_is_ CSS_IDENT })"
+    . cap_end . ")";
   }
   elsif($5) { # number
-   $pattern .= '(?:1(?(?{$$tokens[-1+pos]eq"' . $5 . '"})|(?!)))';
+   $pattern .=
+     '(?:' . cap_start
+             . '(1)(?(?{$$tokens[-1+pos]eq"' . $5 . '"})|(?!))'
+             . "(?{ $type_is_ CSS_NUMBER })"
+    . cap_end . ")";
   }
   elsif($6) { # '...' reference
    $pattern .=
     '(?:' # again, we use (?: ... ) in case a question mark is added
+   .  cap_start
    . '((??{
                exists $$Self{"' . $6 . '"}
                ? $compiled{$$Self{"' . $6 . '"}{format}}
                : $Fail;
       }))'
    . '(?{
-       local$match{"'.$6.'"}=[$^N,[@$tokens[pos()-length$^N...-1+pos]]]
+       # We have a do-block here because a re-eval’s lexical pad is very
+       # buggy and must not be used. (See perl bug #65150.)
+       local$match{"'.$6.'"}=do{
+         my @range
+          = ' . (naughty_perl ? '$pos[-1]' : 'pos()-length$^N') . '
+              ...-1+pos;
+         [
+          '.(
+             naughty_perl ? 'substr($_,$pos[-1],pos()-$pos[-1])' : '$^N'
+            ).',
+           [@$tokens[@range]],[@valtypes[@range]],[@$prepped[@range]]
+         ];
+       }
       })'
+   .  cap_end
    .')'
               
   }
@@ -445,22 +660,33 @@ sub _compile_format {
        $7 eq '|' ? '|'
      : $7 eq ']' ? ')'
      : ')(?{
-         local $match[-1][' . pop(@capture_nums) . '] =
-          [$^N,[@$tokens[pos()-length$^N...-1+pos]]]
-        }))';
-# ~~~ Hmm, this comment doesn’t make any sense. What was I going to put
-#     here? This code is for the sake of CSSValueList objects, which are
-#     not supported yet. I know it was going to be changed to something
-#     similar to what this comment is referring to.
-     # perl  5.8.8  (not  5.8.9  or  5.10)  has  trouble  with
-     # local @{$match[-1]} = (@{$match[-1]},...)  inside a re-eval
-     # (semi-panic), hence the temporary copy in @m. All perl versions
-     # I’ve tested with have trouble with lexicals inside  re-evals  clob-
-     # bering variables in outer scopes  (see bug #~~~~~);  hence the weird
-     # do{{}} trick.
+          (
+           local $match[-1][' . pop(@capture_nums) . '],
+           local @{$list[-1]}
+          ) = do {
+           my @range
+            = '.(naughty_perl ? '$pos[-1]' : 'pos()-length$^N').'...-1+pos;
+           my @a = (
+            '.(
+               naughty_perl
+                ? 'substr($_,$pos[-1],pos()-$pos[-1])'
+                : '$^N'
+              ).',
+             [@$tokens[@range]],[@valtypes[@range]],[@$prepped[@range]],
+             pos
+           );
+           \@a, @{$list[-1]}, \@a
+          }
+        })' . cap_end . ')';
+     # We have to intertwine these assignments in this convoluted way
+     # because of the lexical-in-re-eval bug [perl #65150].
    }
    if(do{$7 =~ /^[[(|]\z/}) { # start of a group
-    $pattern .= '(?:' . '(' x ($7 eq '(') unless $7 eq '|';
+    $pattern
+     .= '(?:'
+      . (cap_start.'(')
+          x ($7 eq '(')
+     unless $7 eq '|';
     push @group_start, length $pattern;
     push @permut_marker, [];
     $7 eq '(' and push @capture_nums, ++$last_capture;
@@ -481,7 +707,7 @@ sub _compile_format {
  }
 
  # Deal with the match vars
- $pattern .= ')(?{@Match=@{$match[-1]};%Match=%match})'
+ $pattern .= ')(?{@Match=@{$match[-1]};@List=@{$list[-1]};%Match=%match})'
   unless $no_match_stuff;
 
  use re 'eval';
@@ -520,13 +746,17 @@ sub _permute {
 
 Colour names:
 
-perl -MRegexp::Assemble -le 'my $ra = new Regexp::Assemble; $ra->add($_) for qw " transparent aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen activeborder activecaption appworkspace background buttonface buttonhighlight buttonshadow buttontext captiontext graytext highlight highlighttext inactiveborder inactivecaption incativecaptiontext infobackground infotext menu menutext scrollbar threeddarkshadow threedface threedhighlight threedlightshadow threedshadow window windowframe windowtext "; print $ra->re '
+perl -MRegexp::Assemble -le 'my $ra = new Regexp::Assemble; $ra->add($_) for qw " transparent aliceblue antiquewhite aqua aquamarine azure beige bisque black blanchedalmond blue blueviolet brown burlywood cadetblue chartreuse chocolate coral cornflowerblue cornsilk crimson cyan darkblue darkcyan darkgoldenrod darkgray darkgreen darkgrey darkkhaki darkmagenta darkolivegreen darkorange darkorchid darkred darksalmon darkseagreen darkslateblue darkslategray darkslategrey darkturquoise darkviolet deeppink deepskyblue dimgray dimgrey dodgerblue firebrick floralwhite forestgreen fuchsia gainsboro ghostwhite gold goldenrod gray green greenyellow grey honeydew hotpink indianred indigo ivory khaki lavender lavenderblush lawngreen lemonchiffon lightblue lightcoral lightcyan lightgoldenrodyellow lightgray lightgreen lightgrey lightpink lightsalmon lightseagreen lightskyblue lightslategray lightslategrey lightsteelblue lightyellow lime limegreen linen magenta maroon mediumaquamarine mediumblue mediumorchid mediumpurple mediumseagreen mediumslateblue mediumspringgreen mediumturquoise mediumvioletred midnightblue mintcream mistyrose moccasin navajowhite navy oldlace olive olivedrab orange orangered orchid palegoldenrod palegreen paleturquoise palevioletred papayawhip peachpuff peru pink plum powderblue purple red rosybrown royalblue saddlebrown salmon sandybrown seagreen seashell sienna silver skyblue slateblue slategray slategrey snow springgreen steelblue tan teal thistle tomato turquoise violet wheat white whitesmoke yellow yellowgreen"; print $ra->re '
+
+perl -MRegexp::Assemble -le 'my $ra = new Regexp::Assemble; $ra->add($_) for qw " activeborder activecaption appworkspace background buttonface buttonhighlight buttonshadow buttontext captiontext graytext highlight highlighttext inactiveborder inactivecaption incativecaptiontext infobackground infotext menu menutext scrollbar threeddarkshadow threedface threedhighlight threedlightshadow threedshadow window windowframe windowtext  "; print $ra->re '
 
 =end comment
 
 =cut
 
-$colour_names_re = '(?:d(?:ark(?:s(?:late(?:gr[ae]y|blue)|(?:eagree|almo)n)|g(?:r(?:e(?:en|y)|ay)|oldenrod)|o(?:r(?:ange|chid)|livegreen)|(?:turquois|blu)e|magenta|violet|khaki|cyan|red)|eep(?:skyblue|pink)|imgr[ae]y|odgerblue)|l(?:i(?:ght(?:s(?:(?:eagree|almo)n|(?:teel|ky)blue|lategr[ae]y)|g(?:r(?:e(?:en|y)|ay)|oldenrodyellow)|c(?:oral|yan)|yellow|blue|pink)|me(?:green)?|nen)|a(?:vender(?:blush)?|wngreen)|emonchiffon)|m(?:e(?:dium(?:(?:aquamarin|turquois|purpl|blu)e|s(?:(?:pring|ea)green|lateblue)|(?:violetre|orchi)d)|nu(?:text)?)|i(?:(?:dnightblu|styros)e|ntcream)|a(?:genta|roon)|occasin)|s(?:(?:a(?:(?:ddle|ndy)brow|lmo)|pringgree)n|late(?:gr[ae]y|blue)|ea(?:green|shell)|(?:teel|ky)blue|i(?:enna|lver)|crollbar|now)|b(?:u(?:tton(?:(?:highligh|tex)t|shadow|face)|rlywood)|l(?:a(?:nchedalmond|ck)|ue(?:violet)?)|(?:isqu|eig)e|ackground|rown)|p(?:a(?:le(?:g(?:oldenrod|reen)|turquoise|violetred)|payawhip)|(?:owderblu|urpl)e|e(?:achpuff|ru)|ink|lum)|i(?:n(?:active(?:caption|border)|fo(?:background|text)|cativecaptiontext|di(?:anred|go))|vory)|t(?:h(?:reed(?:(?:light|dark)?shadow|highlight|face)|istle)|ransparent|urquoise|omato|eal|an)|c(?:or(?:n(?:flowerblue|silk)|al)|a(?:ptiontext|detblue)|h(?:artreus|ocolat)e|(?:rimso|ya)n)|a(?:(?:ntiquewhit|ppworkspac|liceblu|zur)e|ctive(?:caption|border)|qua(?:marine)?)|g(?:r(?:e(?:en(?:yellow)?|y)|ay(?:text)?)|ol(?:denro)?d|hostwhite|ainsboro)|o(?:l(?:ive(?:drab)?|dlace)|r(?:ange(?:red)?|chid))|w(?:h(?:it(?:esmok)?e|eat)|indow(?:frame|text)?)|f(?:loralwhite|orestgreen|irebrick|uchsia)|h(?:ighligh(?:ttex)?t|o(?:neydew|tpink))|r(?:o(?:sybrown|yalblue)|ed)|nav(?:ajowhite|y)|yellow(?:green)?|violet|khaki)';
+$colour_names_re = '(?:d(?:ark(?:s(?:late(?:gr[ae]y|blue)|(?:eagree|almo)n)|g(?:r(?:e(?:en|y)|ay)|oldenrod)|o(?:r(?:ange|chid)|livegreen)|(?:turquois|blu)e|magenta|violet|khaki|cyan|red)|eep(?:skyblue|pink)|imgr[ae]y|odgerblue)|l(?:i(?:ght(?:s(?:(?:eagree|almo)n|(?:teel|ky)blue|lategr[ae]y)|g(?:r(?:e(?:en|y)|ay)|oldenrodyellow)|c(?:oral|yan)|yellow|blue|pink)|me(?:green)?|nen)|a(?:vender(?:blush)?|wngreen)|emonchiffon)|m(?:edium(?:(?:aquamarin|turquois|purpl|blu)e|s(?:(?:pring|ea)green|lateblue)|(?:violetre|orchi)d)|i(?:(?:dnightblu|styros)e|ntcream)|a(?:genta|roon)|occasin)|s(?:(?:a(?:(?:ddle|ndy)brow|lmo)|pringgree)n|late(?:gr[ae]y|blue)|ea(?:green|shell)|(?:teel|ky)blue|i(?:enna|lver)|now)|p(?:a(?:le(?:g(?:oldenrod|reen)|turquoise|violetred)|payawhip)|(?:owderblu|urpl)e|e(?:achpuff|ru)|ink|lum)|c(?:(?:h(?:artreus|ocolat)|adetblu)e|or(?:n(?:flowerblue|silk)|al)|(?:rimso|ya)n)|b(?:l(?:a(?:nchedalmond|ck)|ue(?:violet)?)|(?:isqu|eig)e|urlywood|rown)|g(?:r(?:e(?:en(?:yellow)?|y)|ay)|ol(?:denro)?d|hostwhite|ainsboro)|o(?:l(?:ive(?:drab)?|dlace)|r(?:ange(?:red)?|chid))|a(?:(?:ntiquewhit|liceblu|zur)e|qua(?:marine)?)|t(?:(?:urquois|histl)e|ransparent|omato|eal|an)|f(?:loralwhite|orestgreen|irebrick|uchsia)|r(?:o(?:sybrown|yalblue)|ed)|i(?:ndi(?:anred|go)|vory)|wh(?:it(?:esmok)?e|eat)|ho(?:neydew|tpink)|nav(?:ajowhite|y)|yellow(?:green)?|violet|khaki)';
+
+$system_colour_names_re = '(?:in(?:active(?:caption|border)|fo(?:background|text)|cativecaptiontext)|b(?:utton(?:(?:highligh|tex)t|shadow|face)|ackground)|threed(?:(?:light|dark)?shadow|highlight|face)|(?:(?:caption|gray)tex|highligh(?:ttex)?)t|a(?:ctive(?:caption|border)|ppworkspace)|window(?:frame|text)?|menu(?:text)?|scrollbar)';
 
 =head1 NAME
 
@@ -534,7 +764,7 @@ CSS::DOM::PropertyParser - Parser for CSS property values
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 
@@ -579,7 +809,6 @@ C<$CSS::DOM::PropertyParser::CSS21>, which contains all of CSS 2.1, and
 C<$CSS::DOM::PropertyParser::Default>, which is currently identical to the
 former, but to which parts of CSS 3 which eventually be added.
 
-
 If one of the default specs will do, you don't need a constructor. Simply
 pass it to the L<CSS::DOM> constructor. If you want to modify it, clone it
 first, using the C<clone> method (as shown in the L</SYNOPSIS>). It is
@@ -600,7 +829,8 @@ hashes/arrays inside it without modifying the original.)
 
 =item add_property ( $name, \%spec )
 
-Adds the specification for the named property.
+Adds the specification for the named property. See
+L</HOW INDIVIDUAL PROPERTIES ARE SPECIFIED>, below.
 
 =item get_property ( $name )
 
@@ -647,14 +877,13 @@ implement these methods here. The methods listed above can be omitted.
 
 =item match ( $property, $value )
 
-=item match ( $property, $value, $token_types, \@tokens )
+=item match ( $property, $token_types, \@tokens )
 
 This checks to see whether C<$value> is a valid value for the C<$property>,
 parsing it if it is. C<$token_types> and C<@tokens> are the values returned
 by C<CSS::DOM::Parser::tokenise>.
 
-Return values are as follows (you can import the constants from 
-L<CSS::DOM::Constants>):
+Return values are as follows:
 
 If the value doesn't match: empty list.
 
@@ -676,37 +905,46 @@ Examples (return value starts on the line following each method call):
  # $list stands for "CSS::DOM::Value::List"
  
  $prop_parser->match('background-position','top left');
- 'top left', 'CSS::DOM::Value', CSS_CUSTOM
+ 'top left', 'CSS::DOM::Value', CSS_CUSTOM, 'top left'
  
  $prop_parser->match('background-position','inherit');
  'inherit', 'CSS::DOM::Value', CSS_INHERIT
  
  $prop_parser->match('top','1em');
- '1em', $prim, CSS_EMS, '1em'
+ '1em', $prim, type => CSS_EMS, value => 1
 
  $prop_parser->match('content','"\66oo"');
- '"\66oo"', $prim, CSS_STRING, '"\66oo"'
+ '"\66oo"', $prim, type => CSS_STRING, value => foo
  
  $prop_parser->match('clip','rect( 5px, 6px, 7px, 8px )');
- 'rect(5px, 6px, 7px, 8px)', $prim, CSS_RECT,
-   [ CSS_PX, 5 ], [ CSS_PX, 6 ],
-   [ CSS_PX, 7 ], [ CSS_PX, 8 ]
+ 'rect(5px, 6px, 7px, 8px)', $prim,
+   type => CSS_RECT,
+   value => [ [ type => CSS_PX, value => 5 ],
+              [ type => CSS_PX, value => 6 ],
+              [ type => CSS_PX, value => 7 ],
+              [ type => CSS_PX, value => 8 ] ]
  
  $prop_parser->match('color','#fff');
- '#fff', $prim, CSS_RGBCOLOR, '#fff'
+ '#fff', $prim, type => CSS_RGBCOLOR, value => '#fff'
  
  $prop_parser->match('color','rgba(255,0,0,.5)');
- 'rgba(255, 0, 0, .5)', $prim, CSS_RGBCOLOR,
-   [ CSS_NUMBER, 255 ], [ CSS_NUMBER, 0 ],
-   [ CSS_NUMBER, 0 ], [ CSS_NUMBER, .5 ]
+ 'rgba(255, 0, 0, .5)', $prim, type => CSS_RGBCOLOR,
+   value => [ [ type => CSS_NUMBER, value => 255 ],
+              [ type => CSS_NUMBER, value => 0   ],
+              [ type => CSS_NUMBER, value => 0   ],
+              [ type => CSS_NUMBER, value => .5  ] ]
  
  $prop_parser->match('content','counter(foo,disc)');
  'counter(foo, disc)', $list,
    separator => ' ',
    values => [
     [
-     CSS_COUNTER,
-     [ CSS_IDENT, 'foo' ], undef, [ CSS_IDENT, 'disc' ],
+     type => CSS_COUNTER,
+     value => [
+      [ type => CSS_IDENT, value => 'foo' ],
+      undef,
+      [ type => CSS_IDENT, value => 'disc' ],
+     ]
     ],
    ]
  
@@ -714,33 +952,43 @@ Examples (return value starts on the line following each method call):
  'Lucida Grande', $list,
    separator => ', ',
    values => [
-    [ CSS_STRING, 'Lucida Grande' ],
+    [ type => CSS_STRING, value => 'Lucida Grande' ],
    ]
 
  $prop_parser->match('counter-reset','Lucida Grande');
  'Lucida Grande', $list,
    separator => ' ',
    values => [
-    [ CSS_IDENT, 'Lucida' ], [ CSS_IDENT, 'Grande' ],
+    [ type => CSS_IDENT, value => 'Lucida' ],
+    [ type => CSS_IDENT, value => 'Grande' ],
    ]
  
  $prop_parser->match('font','bold 13px Lucida Grande');
  {
-  'font-style' => [ 'normal', $prim, CSS_IDENT, 'normal' ],
-  'font-variant' => [ 'normal', $prim, CSS_IDENT, 'normal' ],
-  'font-weight' => [ 'bold', $prim, CSS_IDENT, 'bold' ],
-  'font-size' => [ '13px', $prim, CSS_PX, '13px' ],
-  'line-height' => [ 'normal', $prim, CSS_IDENT, 'normal' ],
+  'font-style' => [
+    'normal', $prim, type => CSS_IDENT, value => 'normal'
+   ],
+  'font-variant' => [
+    'normal', $prim, type => CSS_IDENT, value => 'normal'
+   ],
+  'font-weight' => [
+    'bold', $prim, type => CSS_IDENT, value => 'bold'
+   ],
+  'font-size' => [ '13px', $prim, type => CSS_PX, value => 13 ],
+  'line-height' => [
+    'normal', $prim, type => CSS_IDENT, value => 'normal'
+   ],
   'font-family' => [ 'Lucida Grande', $list,
     separator => ', ',
     values => [
-     [ CSS_STRING, 'Lucida Grande' ],
+     [ type => CSS_STRING, value => 'Lucida Grande' ],
     ]
    ]
  }
 
 =item whatever
 
+~~~ 
 CSS::DOM::Style currently relies on the internal formatting of the hash
 refs. I want to allow custom property parser classes to do away with hash 
 refs
@@ -814,6 +1062,10 @@ All other characters are understood verbatim.
 
 It is not necessary to include the word 'inherit' in the format, since
 every property supports that.
+
+C<< <counter> >> makes use of the specification for the list-style-type
+property. So if you modify the latter, it will affect C<< <counter> >> as
+well.
 
 =item default
 

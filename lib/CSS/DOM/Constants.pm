@@ -1,6 +1,6 @@
 package CSS::DOM::Constants;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use Exporter 5.57 'import';
 
@@ -93,7 +93,7 @@ our %EXPORT_TAGS = (
  value => \@val_constants,
  primitive => \@prim_constants,
 );
-our @EXPORT_OK = map @$_, values %EXPORT_TAGS;
+our @EXPORT_OK = ('%SuffixToConst', map @$_, values %EXPORT_TAGS);
 $EXPORT_TAGS{all} = \@EXPORT_OK;
 
 {package
@@ -110,6 +110,24 @@ CSS::DOM::Value::Primitive;
 CSS::DOM::Constants->import(':primitive');
 }
 
+%SuffixToConst = ( # dimension suffix -> CSSPrimitiveValue type constant
+	'em' => CSS_EMS,
+	'ex' => CSS_EXS,
+	'px' => CSS_PX,
+	'cm' => CSS_CM,
+	'mm' => CSS_MM,
+	'in' => CSS_IN,
+	'pt' => CSS_PT,
+	'pc' => CSS_PC,
+	 deg => CSS_DEG,
+	 rad => CSS_RAD,
+	grad => CSS_GRAD,
+	'ms' => CSS_MS,
+	's'  => CSS_S,
+	'hz' => CSS_HZ,
+	 khz => CSS_KHZ,
+);
+
                               !()__END__()!
 
 =head1 NAME
@@ -118,7 +136,7 @@ CSS::DOM::Constants - Constants for CSS::DOM
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 
@@ -163,6 +181,11 @@ All the constants listed under L<CSS::DOM::Value/CONSTANTS>.
 All the constants listed under L<CSS::DOM::Value::Primitive/CONSTANTS>.
 
 =back
+
+There is also a C<%SuffixToConst> hash which maps dimension suffixes (such
+as 'px'; all lowercase) to CSSPrimitiveValue type constants (such as
+C<CSS_PX>). This is included in the
+':all' tag.
 
 =head1 SEE ALSO
 

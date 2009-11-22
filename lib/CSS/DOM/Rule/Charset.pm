@@ -1,6 +1,6 @@
 package CSS::DOM::Rule::Charset;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -48,7 +48,7 @@ CSS::DOM::Rule::FontFace - CSS @font-face rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 

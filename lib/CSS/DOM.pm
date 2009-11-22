@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -279,7 +279,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -697,10 +697,8 @@ machine-readable list of standard methods.)
       ::Rule::Charset          CSSCharsetRule
   ::Style                      CSSStyleDeclaration, CSS2Properties
   ::Value                      CSSValue
-      ::Value::Primitive       CSSPrimitiveValue
-     [::Value::List            CSSValueList]
- [::RGBColor                   RGBColor]
- [::Rect                       Rect]
+  ::Value::Primitive           CSSPrimitiveValue, RGBColor, Rect
+  ::Value::List                CSSValueList
  [::Counter                    Counter]
 
 CSS::DOM does not implement the following interfaces (see L<HTML::DOM> for
@@ -762,14 +760,9 @@ L<Encode> 2.10 or higher
 
 L<Clone> 0.09 or higher
 
-=head1 BUGS
+L<Graphics::ColorNames::SVG>
 
-L<CSS::DOM::Style's C<getPropertyCSSValue>
-method|CSS::DOM::Style/getPropertyCSSValue> produces incorrect value
-objects for unquoted font and voice names. They are supposed to be strings,
-but are currently either identifiers or custom values. For list properties,
-it currently treats them as custom values, for multiple items, or as single
-values, both of which are incorrect.
+=head1 BUGS
 
 The parser has not been updated to conform to the April 2009 revision of 
 the CSS 2.1 candidate recommendation. Specifically, unexpected closing 
@@ -777,6 +770,20 @@ brackets are not ignored, but cause syntax errors; and @media rules
 containing unrecognised statements are themselves currently treated as 
 unrecognised (the unrecognised inner statements should be ignored, 
 rendering the outer @media rule itself valid).
+
+If you create a custom property parser that defines
+'list-style-type' to include multiple tokens, then counters will become
+C<CSS_CUSTOM> CSSValue objects instead of C<CSS_COUNTER> CSSPrimitiveValue
+objects.
+
+If you change a property parser's property definitions such that a 
+primitive value becomes a list, or vice versa, and then try to modify the
+C<cssText> property of an existing value object belonging to that property,
+things will go awry.
+
+=for comment
+This is because we can’t change a list into a prim and vice versa, because
+one is a hash and the other is an array.
 
 To report bugs, please e-mail the author.
 

@@ -1,60 +1,93 @@
 package CSS::DOM::Value;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
 
 use Carp;
 use CSS::DOM::Constants;
+use CSS'DOM'Exception 'NO_MODIFICATION_ALLOWED_ERR';
 use Exporter 5.57 'import';
+use Scalar'Util < weaken reftype >;
 
 no constant 1.03 ();
-use constant::lexical { # If you add to this list, make sure to update the
-    type => 0,          # numbers in the subclasses!
+use constant::lexical {
+    type => 0,
     valu => 1,
+    ownr => 2,
+    prop => 3,
 };
 
 *EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{value};
 our %EXPORT_TAGS = ( all => \our @EXPORT_OK );
 
 sub new {
-	my $self = bless[], $_[0];
-	$self->[type] = $_[1];
-	$_[1] == CSS_CUSTOM
-	? @_ < 3 && croak
-	   'new CSS::DOM::Value(CSS_CUSTOM, $value) requires the $value'
-	: $_[1] == CSS_INHERIT
+	my $self = bless[], shift;
+	my %args = @_;
+	my $type = $self->[type] = $args{type};
+	$type == CSS_CUSTOM
+	? !exists $args{value} && croak
+	   'new CSS::DOM::Value(type => CSS_CUSTOM) requires a value'
+	: $type == CSS_INHERIT
 		|| croak "Type must be CSS_CUSTOM or CSS_INHERIT";
 
-	$self->[valu] = $_[2];
+	@$self[valu,ownr,prop] = @args{< value owner property >};
+	weaken $$self[ownr];
 
 	$self;
-}
-
-sub new_from_tokens { # undocumented on purpose; this may get changed
-	shift;
-	my($types,$tokens) = @_;
-	
-	@$tokens == 1 && $$tokens[0] eq 'inherit'
-		&& return new __PACKAGE__, CSS_INHERIT;
-
-	# See whether it’s a valid CSS 2.1 simple value
-	require CSS'DOM'Value'Primitive;
-	{return CSS'DOM'Value'Primitive->new_from_tokens($types,$tokens)
-		||next}
-
-	# ~~~ add support for value lists
-
-	return CSS'DOM'Value->new(CSS_CUSTOM, join '',@$tokens);
 }
 
 sub cssValueType { shift->[type] }
 
 sub cssText {
 	my $self = shift;
-	$self->[type] == CSS_CUSTOM
+	my $old = $self->[type] == CSS_CUSTOM
 		? $self->[valu] : 'inherit'
+	 if defined wantarray;
+	if(@_) {
+		die new CSS'DOM'Exception
+		  NO_MODIFICATION_ALLOWED_ERR,
+		 "Unowned value objects cannot be modified"
+		   unless my $owner = $self->[ownr];
+		die new CSS'DOM'Exception
+		  NO_MODIFICATION_ALLOWED_ERR,
+		 "CSS::DOM::Value objects that do not know to which "
+		 ."property they belong cannot be modified"
+		   unless my $prop = $self->[prop];
+
+		if(
+		 my @arsg
+		  = $owner->property_parser->match($prop, $_[0])
+		) {
+			_apply_args_to_self($self,$owner,$prop,@arsg);
+		}
+
+		if(my $mh = $owner->modification_handler) {
+			&$mh();
+		}
+	}
+	$old
+}
+
+sub _apply_args_to_self {
+  my($self,$owner,$prop,@arsg) = @_;
+ _load_if_necessary($arsg[1]);
+  my $new = $arsg[1]->new(
+   owner => $owner, property => $prop, @arsg[2...$#arsg]
+  );
+  reftype $self eq "HASH"
+   ?  %$self = %$new
+   : (@$self = @$new);
+  bless $self, ref $new unless ref $new eq ref $self;
+}
+
+sub _load_if_necessary {
+ $_[0]->can('new')
+  || do {
+      (my $pack = $_[0]) =~ s e::e/egg;
+      require "$pack.pm";
+     };
 }
 
                               !()__END__()!
@@ -65,7 +98,7 @@ CSS::DOM::Value - CSSValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 
@@ -76,21 +109,10 @@ Version 0.07
 This module implements objects that represent CSS property values. It
 implements the DOM CSSValue interface.
 
-This class itself is used for custom values (neither primitive values nor
-lists) and the special 'inherit' value. Subclasses are used for the others.
+This class is used only for custom values (neither primitive values nor
+lists) and the special 'inherit' value.
 
 =head1 METHODS
-
-=head2 Constructor
-
-See also L<CSS::DOM::Value::Primitive>, which has its own constructor.
-
-You probably don't need to call this, but here it is anyway:
-
-  $val = new CSS::DOM::Value TYPE, $css_string;
-
-where C<TYPE> is C<CSS_INHERIT> or C<CSS_CUSTOM>. The C<$css_string> is
-only used when C<TYPE> is C<CSS_CUSTOM>.
 
 =head2 Object Methods
 
@@ -104,6 +126,37 @@ it.
 =item cssValueType
 
 Returns one of the constants below.
+
+=back
+
+=head2 Constructor
+
+You probably don't need to call this, but here it is anyway:
+
+  $val = new CSS::DOM::Value %arguments;
+
+The hash-style C<%arguments> are as follows:
+
+=over
+
+=item type
+
+C<CSS_INHERIT> or C<CSS_CUSTOM>
+
+=item css
+
+A string of CSS code. This is
+only used when C<TYPE> is C<CSS_CUSTOM>.
+
+=item owner
+
+The style object that owns this value; if this is omitted, then the value
+is read-only. The value object holds a weak reference to the owner.
+
+=item property
+
+The name of the CSS property to which this value belongs. C<cssText> uses
+this to determine how to parse text passed to it.
 
 =back
 
@@ -126,6 +179,6 @@ L<CSS::DOM>
 
 L<CSS::DOM::Value::Primitive>
 
-L<CSS::DOM::Value::List> (doesn't exist yet)
+L<CSS::DOM::Value::List>
 
 L<CSS::DOM::Style>

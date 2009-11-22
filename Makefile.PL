@@ -9,10 +9,12 @@ my %prq = (
 	'constant::lexical'           => 0,
 	 Encode                       => 2.1,  # LEAVE_SRC
 	 Exporter                     => 5.57, # use Exporter 'import';
+	'Graphics::ColorNames::SVG'   => 0,
 	 overload                     => 0,
 	 re                           => 0,
 	'Scalar::Util'                => 0,
 	 strict                       => 0,
+	'Tie::Util'                   => 0,
 	 warnings                     => 0,
 # for testing only:
 	'Scalar::Util'                => 1.09, # refaddr

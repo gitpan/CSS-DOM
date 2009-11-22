@@ -1281,3 +1281,23 @@ $sheet -> insertRule('* {azimuth: 0; azimuth: blue}',0);
 is $sheet->cssRules->[0]->style->azimuth, '0',
  'new CSS::DOM property_parser => ...';
 
+# ------------- Miscellaneous Bug Fixes ------------- #
+
+use tests 4;
+{
+ # Note: These fixes rely on border-top-color not having a default value.
+ # That may change, in which case we will have to create our own property
+ # specs for the tests’ sake.
+ $s->cssText('border-top-color: white; border-top: inset');
+ is $s->borderTopColor, "",
+  'assignment to shorthand properties initiated by the parser deletes a'
+   .' subproperty whose default value is blank';
+ is +()=$s->getPropertyCSSValue("border-top-color"), 0,
+  ' and that assignment causes getPropertyCSSValue to return nothing';
+ $s->borderTopColor('white'); $s->borderTop('inset');
+ is $s->borderTopColor, "",
+  'direct assignment to shorthand properties deletes a'
+   .' subproperty whose default value is blank';
+ is +()=$s->getPropertyCSSValue("border-top-color"), 0,
+  ' and *that* assignment causes getPropertyCSSValue to return nothing';
+}

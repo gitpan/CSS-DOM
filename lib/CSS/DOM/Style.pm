@@ -1,6 +1,6 @@
 package CSS::DOM::Style;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use warnings; no warnings qw' utf8';
 use strict;
@@ -23,14 +23,12 @@ use Scalar::Util 'weaken';
 #    pri         => {...},  # property priorities
 # }
 #
-# The value of an element in the props hash can be either a CSSValue object
-# or an array ref:
-# [
-#   $types,
-#   \@tokens,
-#   [ [$types,\@tokens], ... ]
-# ]
-# The last element is for list properties only.
+# The value of an element in the props hash can be one of three things
+#  1) a CSSValue object
+#  2) an array ref that is a blueprint for a CSSValue object:
+#     [ $css_code, $class, @constructor_args]
+#  3) a string of css code
+# Item (3) is only used when there is no property parser.
 
 sub parse {
 	require CSS::DOM::Parser;
@@ -110,8 +108,9 @@ sub getPropertyValue { # ~~~ Later I plan to make this return lists of
 	exists $props->{$name}
 		or return return '';
 	my $val = $props->{$name};
-	return ref $val eq 'ARRAY'
-		? join '', @{$$val[1]} : $val->cssText;
+	return ref $val eq 'ARRAY' ? $$val[0]
+	     : !ref $val           ? $val
+	     :                       $val->cssText;
 }
 
 sub getPropertyCSSValue {
@@ -120,15 +119,19 @@ sub getPropertyCSSValue {
 	exists +(my $props = $self->{props} || return)->{
 	  my $name = lc$_[0]
 	}	or return return;
-	ref $$props{$name} eq 'ARRAY' && @{ $$props{$name} } == 3
-	 and return; #list values not yet supported
-	require CSS::DOM::Value;
 	my $valref = \$props->{$name};
 	return ref $$valref eq 'ARRAY'
-		? (
+		? scalar (
+			$$$valref[1]->can('new')
+			 || do {
+			     (my $pack = $$$valref[1]) =~ s e::e/egg;
+			     require "$pack.pm";
+			    },
 			$$valref =
-			  new_from_tokens CSS::DOM::Value
-			    @$$valref, 
+			  $$$valref[1]->new(
+			   owner => $self, property => $name,
+			   @$$valref[2..$#$$valref],
+			  )
 		) : $$valref;
 }
 
@@ -178,11 +181,14 @@ sub setProperty {
 	my $props = $$self{props} ||= {};
 	my $pri = $$self{pri} ||= {};
 
+	my $val;
 	if(my $spec = $self->{parser}) {
-		my($shorthand, $vals) = $spec->match($name, @tokens)
+		my(@args) = $spec->match($name, @tokens)
 			or return;
-		if($shorthand) {
-			while(my($k,$v) = each %$vals) {
+		if(@args == 1) { # shorthand
+			while(my($k,$v) = each %{ $args[0] }) {
+				$self->removeProperty($k), next
+				 if $v eq "";
 				exists $$props{$k=lc$k}
 				 or push @{$$self{names}}, $k;
 				$$props{$k} = $v;
@@ -190,14 +196,13 @@ sub setProperty {
 			}
 			return;
 		}
-		elsif(ref $vals eq 'REF') {
-			push @tokens, $$vals;
+		else {
+			$val = \@args;
 		}
-		else { @tokens = @$vals; }
 	}
 
 	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
-	$$props{$name} = \@tokens;
+	$$props{$name} = $val || join "", @{ $tokens[1] };
 	$$pri{$name} = $priority;
 
 	_m($self);
@@ -231,12 +236,14 @@ sub _set_property_tokens { # private
 	my $pri = $$self{pri} ||={};
 
 	# See if we need to parse the value
-	my $list;
+	my $val;
 	if(my $spec = $self->{parser}) {
-		my($shorthand, $vals) = $spec->match($name,$types,$tokens)
+		my(@args) = $spec->match($name,$types,$tokens)
 			or return;
-		if($shorthand) {
-			while(my($k,$v) = each %$vals) {
+		if(@args == 1) {
+			while(my($k,$v) = each %{ $args[0] }) {
+				$self->removeProperty($k), next
+				 if $v eq "";
 				exists $$props{$k=lc$k}
 				 or push @{$$self{names}}, $k;
 				$$props{$k} = $v;
@@ -244,15 +251,15 @@ sub _set_property_tokens { # private
 			}
 			return;
 		}
-		elsif(ref $vals eq 'REF') {
-			$list = $$vals;
+		else {
+			$val = \@args;
 		}
-		else { ($types,$tokens) = @$vals; }
 	}
+	else { $val = join "", @$tokens }
 
 	# Assign the value & priority
 	exists $$props{$name=lc$name} or push @{$$self{names}}, $name;
-	$$props{$name} = [$types,$tokens,$list||()];
+	$$props{$name} = $val;
 	$$pri{$name} = $priority;
 }
 
@@ -291,6 +298,8 @@ sub _m#odified
 	&{$_[0]->{mod_handler} or return}($_[0]);
 }
 
+sub property_parser { shift->{parser} }
+
 sub length { # We put this one last to avoid having to say CORE::length
              # elsewhere.
 	scalar @{shift->{names}}
@@ -306,7 +315,7 @@ CSS::DOM::Style - CSS style declaration class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 
@@ -405,6 +414,10 @@ that is run whenever a change occurs to the style object (with the style
 object as its only argument). If you call it
 without an argument it returns the current handler. With an argument, it
 returns the old value after setting it.
+
+=item property_parser
+
+This returns the parser that was passed to the constructor.
 
 =back
 

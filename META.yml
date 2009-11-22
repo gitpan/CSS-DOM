@@ -1,7 +1,7 @@
 # http://module-build.sourceforge.net/META-spec.html
 #XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
 name:         CSS-DOM
-version:      0.07
+version:      0.08
 version_from: lib/CSS/DOM.pm
 installdirs:  site
 requires:
@@ -11,11 +11,13 @@ requires:
     constant::lexical:             0
     Encode:                        2.1
     Exporter:                      5.57
+    Graphics::ColorNames::SVG:     0
     overload:                      0
     re:                            0
     Scalar::Util:                  1.09
     strict:                        0
     Test::More:                    0
+    Tie::Util:                     0
     warnings:                      0
 
 distribution_type: module

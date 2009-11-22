@@ -1,4 +1,4 @@
-CSS::DOM, version 0.07
+CSS::DOM, version 0.08
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
@@ -8,11 +8,12 @@ CHANGES IN THIS RELEASE
 
 (See the Changes file for the long version.)
 
-Shorthand properties are finally supported.  This means you  can  set
-‘font’ to ‘13px/15px My Font’ and have the ‘font-size’, ‘line-height’,
-and ‘font-family’ properties (among others)  set automatically.  Also,
-invalid property values are now ignored.  How this is done  is  speci-
-fied by objects of the new  CSS::DOM::PropertyParser  class.
+• A lot of work has been done on the classes for  CSS  value  objects.
+  CSS::DOM::Value and CSS::DOM::Value::List  (the latter newly added)
+  are complete. CSS::DOM::Value::Primitive is much more complete than
+  before (but not fully). It now supports colour values.
+• It is now compatible  with  the  perl  5.10.0@34065  included  with
+  with cygwin.
 
 
 INSTALLATION
@@ -40,6 +41,7 @@ This module requires perl 5.8.2 or later, and the following modules:
 • Exporter 5.57 or later
 • Encode 2.10 or later
 • Clone 0.09 or later
+• Graphics::ColorNames::SVG
 
 
 DOCUMENTATION

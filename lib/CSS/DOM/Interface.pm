@@ -1,7 +1,7 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 require CSS::DOM::Constants;
 
@@ -109,8 +109,6 @@ gory details, look at the source code. In fact, here it is:
   	'CSS::DOM::Value' => 'CSSValue',
   	'CSS::DOM::Value::Primitive' => 'CSSPrimitiveValue',
   	'CSS::DOM::Value::List' => 'CSSValueList',
-  	'CSS::DOM::RGBColor' => 'RGBColor',
-  	'CSS::DOM::Rect' => 'Rect',
   	'CSS::DOM::Counter' => 'Counter',
   	 StyleSheetList => {
 		_hash => 0,
@@ -372,44 +370,37 @@ gory details, look at the source code. In fact, here it is:
   			CSS::DOM::Value::Primitive::CSS_RECT
   			CSS::DOM::Value::Primitive::CSS_RGBCOLOR
   		]],
-  #		primitiveType => NUM | READONLY,
+  		primitiveType => NUM | READONLY,
   #		setFloatValue => METHOD | VOID,
-  #		getFloatValue => METHOD | OBJ,
+  		getFloatValue => METHOD | NUM,
   #		setStringValue => METHOD | VOID,
   #		getStringValue => METHOD | STR,
   #		getCounterValue => METHOD | OBJ,
   #		getRectValue => METHOD | OBJ,
   #		getRGBColorValue => METHOD | OBJ,
+  		red => OBJ | READONLY,
+  		green => OBJ | READONLY,
+  		blue => OBJ | READONLY,
+  		alpha => OBJ | READONLY,
+  		top => OBJ | READONLY,
+  		right => OBJ | READONLY,
+  		bottom => OBJ | READONLY,
+  		left => OBJ | READONLY,
   	 },
   	 CSSValueList => {
 		_isa => 'CSSValue',
 		_hash => 0,
-		_array => 0,
-  #		length => NUM | READONLY,
-  #		item => METHOD | OBJ,
+		_array => 1,
+  		length => NUM | READONLY,
+  		item => METHOD | OBJ,
   	 },
-  	 RGBColor => {
-		_hash => 0,
-		_array => 0,
-  #		red => OBJ | READONLY,
-  #		green => OBJ | READONLY,
-  #		blue => OBJ | READONLY,
-  	 },
-  	 Rect => {
-		_hash => 0,
-		_array => 0,
-  #		top => OBJ | READONLY,
-  #		right => OBJ | READONLY,
-  #		bottom => OBJ | READONLY,
-  #		left => OBJ | READONLY,
-  	 },
-  	 Counter => {
-		_hash => 0,
-		_array => 0,
+  #	 Counter => {
+  #		_hash => 0,
+  #		_array => 0,
   #		identifier => STR | READONLY,
   #		listStyle => STR | READONLY,
   #		separator => STR | READONLY,
-  	 },
+  #	 },
   	 CSSStyleSheet => {
   		type => STR | READONLY,
 		_hash => 0,

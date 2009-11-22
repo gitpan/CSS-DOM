@@ -1,5 +1,33 @@
 Revision history for CSS::DOM
 
+0.08    22 November, 2009
+      • Incompatible change:  CSS::DOM::Value’s and CSS::DOM::Value::
+        Primitive’s constructors’ interfaces have changed.  They  now
+        take hash-style arguments.
+      • CSSPrimitiveValue  objects  for  colours  are  now  supported.
+      • %CSS::DOM::Constants::SuffixToConst,  mapping  dimension  suf-
+        fixes to constants
+      • CSS::DOM::Value::Primitive  now implements the Rect  and  RGB-
+        Color interfaces.
+      • CSS::DOM::Value::List  has  been  added.  It  implements  the
+        CSSValueList interface.
+      • CSS::DOM::Value::Primitive no longer inherits from CSS::DOM::
+        Value, but claims that it DOES it.
+      • getPropertyCSSValue now works with list properties.
+      • CSS::DOM::Style’s property_parser method
+      • CSS::DOM::Value::Primitive’s primitiveType and  getFloatValue
+        methods
+      • CSS::DOM::Primitive’s and CSS::DOM::Value’s  cssText  methods
+        are now writable.
+      • Assigning to a shorthand property  (like border-top)  a value
+        (like 'inset')  that causes some sub-properties to have their
+        initial values now deletes any  implied  sub-properties  that
+        do not have default values (like border-top-color).  (If that
+        makes  no  sense  to  you,  see  the  tests  at  the  end  of
+        property-parser.t.)
+      • Fixed to be compatible with 5.10.0@34065 (maint; aka ee8a906),
+        which is included with cygwin.
+
 0.07    16 August, 2009
       • Support for specifications that describe  which  properties
         are supported and  also  the  syntax  of  shorthand  proper-

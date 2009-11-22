@@ -1,162 +1,51 @@
 package CSS::DOM::Value::Primitive;
 
-$VERSION = '0.07';
+$VERSION = '0.08';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
 
 use Carp;
-use CSS::DOM::Constants;
+use CSS::DOM::Constants
+ <%SuffixToConst NO_MODIFICATION_ALLOWED_ERR INVALID_ACCESS_ERR>;
 use CSS::DOM::Util qw '
 	unescape
 	unescape_url
 	unescape_str escape_str
 	             escape_ident ';
-use CSS::DOM::Value;
 use Exporter 5.57 'import';
 
-our @ISA = CSS::DOM::Value::;
+sub DOES {
+ return 1 if $_[1] eq 'CSS::DOM::Value';
+ goto &UNIVERSAL'DOES if defined &UNIVERSAL'DOES;
+}
 
 no constant 1.03 ();
 use constant::lexical { # Don’t conflict with the superclass!
     type => 2,
-    valu => 3,  coun => 3, topp => 3,
-    unit => 4,  sepa => 4, righ => 4,
-                styl => 5, botm => 5,
-                           left => 6,
+    valu => 3,  # counters
+    csst => 4,  name => 0,
+    ownr => 5,  sepa => 1,
+    prop => 6,  styl => 2,
+    indx => 7,
+    form => 8,
+    sfrm => 9, # serialisation format; used currently only by colours
 };
 
 *EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{primitive};
 our %EXPORT_TAGS = ( all => \our @EXPORT_OK );
 
-# ~~~ There are so many special cases in the subroutines below, that it
-#     might make more sense to divide them up into separate packages.
-
-my %lentypes = ( # length suffix -> CSSPrimitiveValue type constant;
-	''   => CSS_NUMBER,
-	'%'  => CSS_PERCENTAGE,
-	'em' => CSS_EMS,
-	'ex' => CSS_EXS,
-	'px' => CSS_PX,
-	'cm' => CSS_CM,
-	'mm' => CSS_MM,
-	'in' => CSS_IN,
-	'pt' => CSS_PT,
-	'pc' => CSS_PC,
-	 deg => CSS_DEG,
-	 rad => CSS_RAD,
-	grad => CSS_GRAD,
-	'ms' => CSS_MS,
-	's'  => CSS_S,
-	'hz' => CSS_HZ,
-	 khz => CSS_KHZ,
-);
-	
-sub new_from_tokens { # This is a private method inconsistent in its behav-
-                      # iour with the superclass’s method,  because it
-                      # returns nothing if the tokens are not valid.
-	my($class,$types,$tokens) = @_;
-	require CSS'DOM'Parser;
-	no warnings 'regexp';
-
-	if($types =~
-	    /^(?:
-	      (d?)[1%D]
-	       |
-	      ([u#'])
-	       |
-	      (i) # (?:si)?) # ~~~ How do we distinguish between ‘font:
-	       |             #     Lucida Grande’ and ‘font: bold italic’?
-	      (fs?$CSS'DOM'Parser'any_re*\)?)
-	    )\z/ox
-	   and !$1 || $$tokens[0] eq '+' || $$tokens[0] eq '-'
-	   and !$2 || $2 ne '#' || do {
-		$$tokens[$-[2]] =~ /#(?:[a-fA-F0-9]{3}|[a-fA-F0-9]{6})\z/
-	   }
-	) {
-		if(defined $1) {
-			my $sign = $1 ? shift @$tokens : '';
-			$sign eq '+' and $sign = '';
-			shift(@$tokens) =~ /([\d.]+)(.*)/;
-			return new $class
-				exists $lentypes{$2} ? $lentypes{$2} :
-					CSS_DIMENSION,
-				"$sign$1",
-				$2;
-		}
-		elsif($2) {
-			my $val = shift @$tokens;
-			if($2 eq "'") {
-				return new $class CSS_STRING,
-					CSS'DOM'Parser'unescape(
-						substr $val, 1, -1
-					);
-			}
-			elsif($2 eq 'u') {
-				return new $class CSS_URI,
-					unescape_url($val);
-			}
-			else { #
-				$val =~ /#(.|..)(.|..)(.|..)/;
-				my $x = -length($1) + 3;
-				return new $class CSS_RGBCOLOR,
-				  [hex $1 x$x, hex $2 x$x, hex $3 x$x];
-			}
-		}
-		elsif($3) {
-			return new $class CSS_IDENT,
-				CSS'DOM'Parser'unescape(shift @$tokens)
-			if @$tokens == 1;
-			return new $class CSS_STRING, join ' ', map
-				CSS'DOM'Parser'unescape($$tokens[$_*2]),
-				0..$#$tokens/2;
-		}
-		# ‘functions’:
-		elsif($$tokens[0] =~ /^attr\(\z/i
-		  and $types =~ /^fs?(i)s?\)\z/) {
-			return new $class CSS_ATTR,
-				unescape $$tokens[$-[1]]
-		}
-		elsif($$tokens[0] =~ /^counter\(\z/i
-		  and $types =~ /^fs?(i)s?(?:,s?(i)s?)?\)\z/) {
-			return new $class CSS_COUNTER,
-				unescape $$tokens[$-[1]],
-				undef,
-				defined $2
-					? unescape $$tokens[$-[2]]
-					: undef;
-		}
-		elsif($$tokens[0] =~ /^counters\(\z/i
-		  and $types =~ /^fs?(i)s?,s?(')s?(?:,s?(i)s?)?\)\z/) {
-			return new $class CSS_COUNTER,
-				unescape $$tokens[$-[1]],
-				unescape_str($$tokens[$-[2]]),
-				defined $3
-					? unescape($$tokens[$-[3]])
-					: undef;
-		}
-		elsif($$tokens[0] =~ /^rect\(\z/i
-		  and $types =~ /^f s?([Di])s?,s?([Di])s?,
-		                    s?([Di])s?,s?([Di])s? \)\z/x) {
-			return new $class CSS_RECT,
-				map unescape $_, @$tokens[@-[1..4]],
-		}
-		else {
-			# ~~~ We need to deal with counter/rect/rgb/attr
-			# constants are CSS_UNKNOWN CSS_ATTR CSS_COUNTER 
-			# CSS_RECT CSS_RGBCOLOR
-			return # unwist for now
-		}
-	}
-
-}
-
 
 sub new {
-	@_ < 3 and croak
-	 "new CSS::DOM::Value::Primitive with fewer than 2 args is not supported yet";
-	my $self = bless[], shift;
-	@$self[2..6] = @_;
+	my $class = shift;
+	my %args = @_;
+	for('type','value') {
+		croak "The $_ argument to new ${\__PACKAGE__} is required"
+		 unless exists $args{$_};
+	}
+	my $self = bless[], $class;
+	@$self[type,valu,csst,ownr,prop,indx,form]
+	 = @args{< type value css owner property index format >};
 	$self;
 }
 
@@ -180,39 +69,346 @@ $unit_suffixes[CSS_KHZ        ] = 'kHz';
 
 sub cssText { 
 	my $self = shift;
-	croak "cssText can't be set yet" if@_;
-	for($self->[type]) {
-		# ~~~ What about the clip() function?
-		$_ == CSS_ATTR and return 'attr(' . $self->[valu] . ')';
-#~~~ what's the format?		$_ == CSS_COUNTER && return 'counter(' . $self->[value] . ')';
-		$_ == CSS_URI and return 'url(' . $self->[valu].  ')';
-		$_ == CSS_RECT and return 'rect('
-			. join(', ', @$self[topp..left])
-		. ')';
-		$_ == CSS_RGBCOLOR and return 'rgb(' . $self->[valu].')'; # ~~~ deal with different colour formats
-		$_ == CSS_STRING and do {
-			(my $str = $self->[valu]) =~ s/'/\\'/g;;
-			return "'$str'";
-		};
-		$_ == CSS_COUNTER and return
-			'counter' . 's' x defined($self->[sepa]) . '('
-			. escape_ident($self->[coun])
-			. (defined $self->[sepa]
-				? ", " . escape_str($self->[sepa])
-				: '' )
-			. (defined $self->[styl]
-				? ", " . escape_ident($self->[styl])
-				: '' )
-			. ")";
-		return $self->[valu]. (
-			$_ == CSS_DIMENSION && defined $self->[unit]
-				? $self->[unit]
-				: $unit_suffixes[$_] || ''
-		);
+	my $old;
+	if(defined wantarray) {
+		if(defined $self->[csst]) {
+			$old = $self->[csst]
+		}
+		else { for($self->[type]) {
+			my $val = $self->[valu];
+			$old
+			 = $_ == CSS_ATTR
+			    ? 'attr(' . $val . ')'
+			 : $_ == CSS_URI
+			    ? 'url(' . $val.  ')'
+			 : $_ == CSS_RECT 
+			    ? 'rect('
+			     .  join(
+			         ', ',
+			          map $self->$_->cssText,
+			           <top right bottom left>
+			        )
+			     .')'
+			 : $_ == CSS_RGBCOLOR
+			    ? ref $val eq 'ARRAY'
+			       ? do {
+			          my(@val_objs,$ret)
+			           = map $self->$_, <red green blue>;
+			          if(
+			           my $form = $$self[sfrm]
+				    and
+			           @$val < 4 || $$val[3]->getFloatValue==1
+			          ){
+			           if($form =~ /^#/) {
+			            # Try to preserve original #bed/#c0ffee
+			            # format if possible
+			            my $digits = chop $form;
+			            if($digits == 1) {
+			             for my $val_obj(@val_objs) {
+			              my $val = $val_obj->getFloatValue;
+			              if(
+			               $val_obj->primitiveType
+			                == CSS_NUMBER
+			              ){
+			               not $val % 17 and $val == int $val
+			                and $val > 0 and $val < 256
+			             # ~~~ Would it be faster simply to use
+			             #     a regexp?
+			                 or undef $ret, last;
+			               $ret .= sprintf "%x", $val/17;
+			              }
+			              else { # percentage
+			               not $val % 20 and $val == int $val
+			                and $val > 0 and $val < 101
+			             # ~~~ Would it be faster simply to use
+			             #     a regexp?
+			                 or undef $ret, last;
+			               $ret .= sprintf "%x", $val * .15;
+			              }
+			             }
+			            }
+			            if(!$val || $digits == 2) {
+			             for my $val_obj(@val_objs) {
+			              my $val = $val_obj->getFloatValue;
+			              if(
+			               $val_obj->primitiveType
+			                == CSS_NUMBER
+			              ){
+			               $val == int $val
+			                and $val > 0 and $val < 256
+			                 or undef $ret, last;
+			               $ret .= sprintf "%02x", $val;
+			              }
+			              elsif($digits == 2) { # percentage
+			               not $val % 20 and $val == int $val
+			                and $val > 0 and $val < 101
+			             # ~~~ Would it be faster simply to use
+			             #     a regexp?
+			                 or undef $ret, last;
+			               $ret .= sprintf "%02x",$val * 2.55;
+			              }
+			             }
+			            }
+			            $ret and substr $ret,0,0, = '#';
+			           }
+			           else { # named colour
+			            my $rgb = (\our %Colours)->{lc $form};
+			            $val_objs[0]->getFloatValue
+			             == $rgb >> 16
+			            and $val_objs[1]->getFloatValue
+			             == ($rgb >> 8 & 255)
+			            and $val_objs[2]->getFloatValue
+			             == ($rgb & 255)
+			            and $ret = $form;
+			           }
+			          }
+			          
+			          unless($ret) {
+			           my @types
+			            = map $_->primitiveType, @val_objs;
+			           if($types[0] == $types[1]
+			           && $types[0] == $types[2]) {
+			            $ret = join ", ",
+			                         map cssText $_, @val_objs;
+			           }
+			           else {
+			            my $type = $types[
+			              $types[0] == $types[1]
+			               || $types[0] == $types[2]
+			              ? 0
+			              : 1
+			            ];
+			            $ret = join ", ", $type == CSS_NUMBER
+			             ? map
+			                $types[$_] == CSS_NUMBER
+			                 ? $val_objs[$_]->getFloatValue
+			                 : $val_objs[$_]->getFloatValue
+			                    * 255/100,
+			                0...2
+			             : map
+			                $types[$_] == CSS_PERCENTAGE
+			                 ? $val_objs[$_]->getFloatValue
+			                 : $val_objs[$_]->getFloatValue
+			                    * 100/255 . '%',
+			                0...2;
+			           }
+			           my $alpha;
+			           @$val >= 4 && (
+			            $alpha = $self->alpha->cssText
+			           ) != 1
+			            ? "rgba($ret, $alpha)"
+			            : "rgb($ret)"
+			          }
+			         }
+			       : $val =~ /^#/
+			         ? $val
+			         : escape_ident $val
+			 : $_ == CSS_STRING
+			    ? do {
+			       (my $str = $val) =~ s/'/\\'/g;;
+			       return "'$str'";
+			      }
+			 : $_ == CSS_COUNTER
+			    ? 'counter' . 's' x defined($$val[sepa]) . '('
+			      . escape_ident($$val[name])
+			      . (defined $$val[sepa]
+			         ? ", " . escape_str($$val[sepa])
+			         : '' )
+			      . (defined $$val[styl]
+			         ? ", " . escape_ident($$val[styl])
+			         : '' )
+			      . ")"
+			 : $_ == CSS_DIMENSION
+			    ? $$val[0].escape_ident$$val[1]
+			 :    $unit_suffixes[$_]
+			       ? 0+$val . $unit_suffixes[$_]
+			       : $val;
+		}}
 	}
+	if(@_) {
+		require CSS'DOM'Exception,
+		die new CSS'DOM'Exception
+		  NO_MODIFICATION_ALLOWED_ERR,
+		 "Unowned value objects cannot be modified"
+		   unless my $owner = $self->[ownr];
+		my $prop = $$self[prop];
+
+		# deal with formats
+		if(my $format = $$self[form]) {
+			if(!our $parser) {
+				require CSS'DOM'PropertyParser;
+				add_property{
+				 $parser = new CSS'DOM'PropertyParser
+				} _=>our $prop_spec = {};
+			}
+			our $prop_spec->{format} = $format;
+			if(my @args = match { our $parser } _=> shift) {
+				require CSS'DOM'Value;
+				CSS'DOM'Value'_apply_args_to_self(
+				 $self, $owner, $prop,
+				 @args, format => $format, 
+				);				
+			}
+		}
+
+		# This is never reached, at least not when CSS::DOM’s mod-
+		# ules call the constructor:
+		elsif(!defined $prop) {
+			require CSS'DOM'Exception,
+			die new CSS'DOM'Exception
+			  NO_MODIFICATION_ALLOWED_ERR,
+			 ref($self) . " objects that do not know to which "
+			 ."property they belong cannot be modified"
+		}
+
+		# sub-values of a list
+		elsif(defined(my $index = $$self[indx])) {
+			my $old_list
+				 = $owner->getPropertyCSSValue($prop);
+				# ~~~ What do we do if $old_list is undef?
+				#     In what circumstances can
+				#     that happen?
+			# ~~~ If we add an API to PropertyParser to allow
+			#     for list sub-value formats, we can do away
+			#     with this inefficient mess.
+			my $length = $old_list->length;
+			my @arsg
+			  = $owner->property_parser->match(
+			     $prop,
+			     join $old_list->{s}, # ~~~ we probably need an
+			                     # API to avoid this encap viol
+			      map(
+			       $old_list->item($_)->cssText, 0..$index-1
+			      ),
+			      $_[0],
+			      map(
+			       $old_list->item($_)->cssText,
+			       $index+1..$length-1
+			      ),
+			    );
+			require CSS'DOM'Value;
+			CSS'DOM'Value'_load_if_necessary($arsg[1]);
+			my $list = $arsg[1]->new(@arsg[2..$#arsg]);
+			if($list->length != $length) {
+					# This would mean we were given a
+					# string with commas or a blank
+					# string, which are invalid.
+					return $old
+			}
+			@$self = @{ $list->item($index) };
+		}
+
+		# property-level values
+		elsif(
+		 my @arsg
+		  = $owner->property_parser->match($prop, $_[0])
+		) {
+			require CSS'DOM'Value;
+			CSS'DOM'Value'_apply_args_to_self(
+				 $self, $owner, $prop, @arsg
+			);
+		}
+
+		if(my $mh = $owner->modification_handler) {
+			&$mh();
+		}
+	}
+	$old;
 }
 
 sub cssValueType { CSS::DOM::Value::CSS_PRIMITIVE_VALUE }
+
+sub primitiveType { shift->[type] }
+
+sub getFloatValue {
+ my $self = shift;
+
+ # There are more types that are numbers than are not, so we
+ # invert our list.
+ my $type = $self->[type];
+ require CSS'DOM'Exception,
+ die new CSS'DOM'Exception INVALID_ACCESS_ERR, "Not a numeric value"
+  if $type == CSS_UNKNOWN || $type == CSS_STRING || $type == CSS_URI 
+  || $type == CSS_IDENT || $type == CSS_ATTR || $type == CSS_COUNTER
+  || $type == CSS_RECT || $type == CSS_RGBCOLOR;
+
+ no warnings"numeric";
+ 0+($type == CSS_DIMENSION ? $$self[valu][0] : $$self[valu])
+}
+
+# ------------- Rect interface --------------- #
+
+sub _autoviv_rect_value {
+ my($self,$index) = @_;
+ for my $val($$self[valu][$index]) {
+  if(ref $val eq 'ARRAY') {
+   $val = new
+    __PACKAGE__,
+     owner => $$self[ownr],
+     format => '<length>|auto',
+     @$val;
+   delete $$self[csst]; # prevent this from being used by cssText; hence-
+  }                     # forth we must use the subvalues
+  return $val
+ }
+}
+
+sub top { _autoviv_rect_value $_[0], 0 }
+sub right { _autoviv_rect_value $_[0], 1 }
+sub bottom { _autoviv_rect_value $_[0], 2 }
+sub left { _autoviv_rect_value $_[0], 3 }
+
+# ------------- RGBColor interface --------------- #
+
+sub _autoviv_colour_value {
+ my($self,$index) = @_;
+ if(ref $$self[valu] ne 'ARRAY') {
+  if($$self[valu] =~ /^#(..|.)(..|.)(..|.)/) {
+   my $x = -length($1) + 3;
+   $$self[sfrm] = '#' . length $1;
+   no strict 'refs';
+   $$self[valu] = [
+    map([type => CSS_NUMBER, value => hex $$_ x$x], 1...3),
+   ];
+  }
+  else {
+   our %Colours or *Colours = (
+    require Graphics'ColorNames'SVG, NamesRgbTable Graphics'ColorNames'SVG
+   );
+   my $rgb = $Colours{lc($$self[sfrm] = $$self[valu])};
+   $$self[valu] = [
+    map
+     [type => CSS_NUMBER, value => $_],
+     $rgb >> 16, $rgb >> 8 & 255, $rgb & 255
+   ];
+  }
+ }
+ for my $val($$self[valu][$index]) {
+  if(ref $val eq 'ARRAY') {
+   $val = new
+    __PACKAGE__,
+     owner => $$self[ownr],
+     format => $index == 3 ? '<number>' : '<number>|<percentage>',
+     @$val;
+   delete $$self[csst];
+  }
+  elsif(!defined $val and $index == 3) { # alpha
+   $val = new
+    __PACKAGE__,
+     owner => $$self[ownr],
+     format => '<number>',
+     type => CSS_NUMBER,
+     value => 1; 
+   delete $$self[csst];
+  }
+  return $val
+ }
+}
+
+sub red { _autoviv_colour_value $_[0], 0 }
+sub green { _autoviv_colour_value $_[0], 1 }
+sub blue { _autoviv_colour_value $_[0], 2 }
+sub alpha { _autoviv_colour_value $_[0], 3 }
 
                               !()__END__()!
 
@@ -222,7 +418,7 @@ CSS::DOM::Value::Primitive - CSSPrimitiveValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =head1 SYNOPSIS
 
@@ -232,51 +428,22 @@ Version 0.07
 
 This module implements objects that represent CSS primitive property 
 values (as opposed to lists). It
-implements the DOM CSSPrimitiveValue interface and inherits from 
-L<CSS::DOM::Value>.
+implements the DOM CSSPrimitiveValue, Rect, and RGBColor interfaces.
 
 =head1 METHODS
 
-=head2 Constructor
+If you need the constructor, it's below the object methods. Normally you
+would get an object via L<CSS::DOM::Style's C<getPropertyCSSValue>
+method|CSS::DOM::Style/getPropertyCSSValue>.
 
-You probably don't need to call this, but here it is anyway:
-
-  $val = new CSS::DOM::Value::Primitive TYPE, @args;
-  $val = new CSS::DOM::Value::Primitive TYPE, %args;
-
-where C<TYPE> is one of the constants listed below. There are two ways of
-specifying arguments.
-
-Array-style arguments (C<@args>) are
-interpreted differently depending on the C<TYPE>:
-
-  $class = "CSS::DOM::Value::Primitive";
-  $val = new $class  CSS_DIMENSION, $value, $unit_text
-  $val = new $class  CSS_COUNTER,   $counter_name, $separator, $style
-  $val = new $class  CSS_RECT,      $top, $right, $bottom, $left
-                                       # these four are CSSValue objects
-
-All other types just use the first of the C<@args>, treating it as the
-value.
-
-With hash-style arguments, you can specify either:
-
-  $class = "CSS::DOM::Value::Primitive";
-  $val = new $class  CSS_STRING, value => 'foo';
-  $val = new $class  CSS_STRING, css => '"\66oo"';
-
-=head2 Object Methods
+=head2 CSSValue Interface
 
 =over 4
 
 =item cssText
 
 Returns a string representation of the attribute. Pass an argument to set 
-it B<(not yet supported)>.
-
-=back
-
-The rest have still to be implemented.
+it.
 
 =item cssValueType
 
@@ -284,7 +451,159 @@ Returns C<CSS::DOM::Value::CSS_PRIMITIVE_VALUE>.
 
 =back
 
-=end comment
+=head2 CSSPrimitiveValue Interface
+
+=over
+
+=item primitiveType
+
+Returns one of the L</CONSTANTS> listed below.
+
+=item getFloatValue
+
+Returns a number if the value is numeric.
+
+=back
+
+The rest have still to be implemented.
+
+=head2 Rect Interface
+
+The four methods C<top>, C<right>, C<bottom> and C<left> each return
+another
+value object representing the individual value.
+
+=head2 RGBColor Interface
+
+The four methods C<red>, C<green>, C<blue> and C<alpha> each return another
+value object representing the individual value.
+
+=head2 Constructor
+
+You probably don't need to call this, but here it is anyway:
+
+  $val = new CSS::DOM::Value::Primitive:: %args;
+
+The hash-style arguments are as follows. Only C<type> and C<value> are
+required.
+
+=over
+
+=item type
+
+One of the constants listed below under L</CONSTANTS>
+
+=item value
+
+The data stored inside the value object. The format expected depends on the
+type. See below.
+
+=item css
+
+CSS code used for serialisation. This will make reading C<cssText> faster
+at least until the value is modified.
+
+=item owner
+
+The style object that owns this value; if this is omitted, then the value
+is read-only. The value object holds a weak reference to the owner.
+
+=item property
+
+The name of the CSS property to which this value belongs. C<cssText> uses
+this to determine how to parse text passed to it. This does not
+apply to the sub-values of colours, counters and rects, but it I<does>
+apply to individual elements of a list value.
+
+=item index
+
+The index of this value within a list value (only applies ot elements of a
+list, of course).
+
+=item format
+
+This is used by sub-values of colours and rects. It determines
+how assignment to C<cssText> is handled. This uses the same syntax as the
+formats in L<CSS::DOM::PropertyParser|CSS::DOM::PropertyParser/format>.
+
+=back
+
+Here are the formats for the C<value> argument, which depend on the type:
+
+=over
+
+=item CSS_UNKNOWN
+
+A string of CSS code.
+
+=item CSS_NUMBER, CSS_PERCENTAGE
+
+A simple scalar containing a number.
+
+=item Standard Dimensions
+
+Also a simple scalar containing a number.
+
+This applies to C<CSS_EMS>, C<CSS_EXS>, C<CSS_PX>, C<CSS_CM>, C<CSS_MM>, C<CSS_IN>, C<CSS_PT>, C<CSS_PC>, C<CSS_DEG>, C<CSS_RAD>, C<CSS_GRAD>, C<CSS_MS>, C<CSS_S>, C<CSS_HZ> and C<CSS_KHZ>.
+
+=item CSS_DIMENSION
+
+An array ref: C<[$number, $unit_text]>
+
+=item CSS_STRING
+
+A simple scalar containing a string (not a CSS string literal; i.e., no
+quotes or escapes).
+
+=item CSS_URI
+
+The URL (not a CSS literal)
+
+=item CSS_IDENT
+
+A string (no escapes)
+
+=item CSS_ATTR
+
+A string containing the name of the attribute.
+
+=item CSS_COUNTER
+
+An array ref: C<[$name, $separator, $style]>
+
+C<$separator> and C<$style> may each be C<undef>. If C<$separator> is
+C<undef>, the object represents a C<counter(...)>. Otherwise it represents
+C<counters(...)>.
+
+=item CSS_RECT
+
+An array ref: C<[$top, $right, $bottom, $left]>
+
+The four elements are either CSSValue objects or
+array refs of arguments to be passed to the constructor. E.g.:
+
+ [
+     [type => CSS_PX, value => 20],
+     [type => CSS_PERCENTAGE, value => 50],
+     [type => CSS_PERCENTAGE, value => 50],
+     [type => CSS_PX, value => 50],
+ ]
+
+When these array refs are converted to objects, the C<format>
+argument is supplied automatically, so you do not need to include it here.
+
+=item CSS_RGBCOLOR
+
+A string beginning with '#', with no escapes (such as '#fff' or '#c0ffee'),
+a colour name (like red) or an array ref with three to four elements:
+
+ [$r, $g, $b]
+ [$r, $g, $b, $alpha]
+
+The elements are either CSSValue objects or array refs of
+argument lists, as with C<CSS_RECT>.
+
+=back
 
 =head1 CONSTANTS
 
@@ -350,6 +669,6 @@ L<CSS::DOM>
 
 L<CSS::DOM::Value>
 
-L<CSS::DOM::Value::List> (doesn't exist yet)
+L<CSS::DOM::Value::List>
 
 L<CSS::DOM::Style>

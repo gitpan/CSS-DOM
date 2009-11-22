@@ -1,7 +1,4 @@
 Changes
-idl/1-stylesheets.idl
-idl/2-css.idl
-idl/idl2interf
 lib/CSS/DOM.pm
 lib/CSS/DOM/Array.pm
 lib/CSS/DOM/Constants.pm
@@ -22,7 +19,7 @@ lib/CSS/DOM/Style.pm
 lib/CSS/DOM/StyleSheetList.pm
 lib/CSS/DOM/Util.pm
 lib/CSS/DOM/Value.pm
-#lib/CSS/DOM/Value/List.pm
+lib/CSS/DOM/Value/List.pm
 lib/CSS/DOM/Value/Primitive.pm
 Makefile.PL
 MANIFEST
@@ -46,6 +43,7 @@ t/CSSStyleDeclaration.t
 t/CSSStyleRule.t
 t/CSSStyleSheet-insertRule.t
 t/CSSStyleSheet.t
+t/CSSValue-prim-cssText.t
 t/CSSValue.t
 t/CSSValueList.t
 t/hasFeature.t

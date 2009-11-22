@@ -13,8 +13,8 @@ use_ok 'CSS::DOM::Style',;
 
 use tests 3; # first make sure we can use it without loading CSS::DOM
 {
-	my $owner = qr//;
-	sub Regexp::parentStyleSheet{}
+	my $owner = bless [], 'bext';
+	sub bext::parentStyleSheet{}
 	my $decl = new CSS::DOM::Style $owner;
 	is $decl->parentRule, $owner, 'constructor sets the parentRule';
 	undef $owner;
@@ -43,7 +43,7 @@ use tests 1; # getPropertyValue
 is $decl->getPropertyValue('text-decoration'), 'underline',
 	'getPropertyValue';
 
-use tests 5; # getPropertyCSSValue
+use tests 6; # getPropertyCSSValue and property_parser
 is +()=$decl->getPropertyCSSValue('text-decoration'), '0',
 	'retval of getPropertyCSSValue when prop parser is not in use';
 {
@@ -52,9 +52,11 @@ is +()=$decl->getPropertyCSSValue('text-decoration'), '0',
   'text-decoration: underline',
    property_parser =>$CSS::DOM::PropertyParser::Default
  );
- isa_ok $decl->getPropertyCSSValue('text-decoration'), 'CSS::DOM::Value',
+ is $decl->property_parser, $CSS::DOM::PropertyParser::Default,
+    'property_parser';
+ ok $decl->getPropertyCSSValue('text-decoration')->DOES('CSS::DOM::Value'),
   'retval of getPropertyCSSValue with property parser';
- isa_ok $decl->getPropertyCSSValue('text-decoration'), 'CSS::DOM::Value',
+ ok $decl->getPropertyCSSValue('text-decoration')->DOES('CSS::DOM::Value'),
   'retval of getPropertyCSSValue (2nd time)'; # weird caching bug in 0.06
  is +()=$decl->getPropertyCSSValue('background-color'), '0',
   'retval of getPropertyCSSValue when the prop doesn\'t exist';
