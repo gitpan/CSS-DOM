@@ -1,6 +1,6 @@
 package CSS::DOM::Style;
 
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 use warnings; no warnings qw' utf8';
 use strict;
@@ -302,7 +302,7 @@ sub property_parser { shift->{parser} }
 
 sub length { # We put this one last to avoid having to say CORE::length
              # elsewhere.
-	scalar @{shift->{names}}
+	scalar @{shift->{names}||return 0}
 }
 
 
@@ -315,7 +315,7 @@ CSS::DOM::Style - CSS style declaration class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =head1 SYNOPSIS
 

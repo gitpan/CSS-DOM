@@ -1,4 +1,4 @@
-#!/usr/bin/perl -T
+#!/usr/bin/perl -Tw
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis regexp once qw';
 our $tests;
@@ -174,7 +174,7 @@ for(qw "top 5") {
  is $s-> backgroundRepeat, 'no-repeat', "invalid bg-repeat value: $_";
 }
 
-use tests 22; # background
+use tests 23; # background
 {
  my $props = sub {
   return join ",", map $s->getPropertyValue("background-$_"),
@@ -184,6 +184,10 @@ use tests 22; # background
  is $s->background, 'white', 'background: colour';
  is &$props, 'white,none,repeat,scroll,0% 0%',
   'other sub-properties after setting background to colour';
+ is # bug fixed in 0.09, that only occurred in 5.10.0 [RT #54809]
+   $s->getPropertyCSSValue('background-color')->cssValueType,
+   1, # CSS_PRIMITIVE_VALUE
+  'value types of named subprops of shorthand props after sh. assignment';
  $s->background('url(foo)');
  is $s->background, 'url(foo)', 'background: url';
  is &$props, 'transparent,url(foo),repeat,scroll,0% 0%',
@@ -240,7 +244,7 @@ $s->borderCollapse('collapse');
 $s->borderCollapse('no-repeat');
 is $s->borderCollapse, 'collapse', "invalid border-claps val: no-repeat";
 
-use tests 14; # border-color
+use tests 15; # border-color
 {
  my $props = sub {
   return join ",", map $s->getPropertyValue("border-$_-color"),
@@ -270,6 +274,10 @@ use tests 14; # border-color
   'setting border-color to four values, the 1st 2 the same';
  is &$props, 'red,red,blue,#f0f',
   'result of setting border-color to four values, the 1st 2 the same';
+ $s->borderColor('rgb(255, 0, 0) rgb(0, 255, 0) rgb(0, 0, 255) rgb(0, 0, 0)');
+ is $s->borderColor, 'rgb(255, 0, 0) rgb(0, 255, 0) rgb(0, 0, 255) rgb(0, 0, 0)', # bug in 0.08 (fixed in 0.09)
+  'setting border-color to four rgb() values';  # that only affected
+                                                     # cygwin perl
 
  $s->borderColor('');
  is $s->borderColor, '', 'setting border-color to nothing ...';
@@ -1300,4 +1308,32 @@ use tests 4;
    .' subproperty whose default value is blank';
  is +()=$s->getPropertyCSSValue("border-top-color"), 0,
   ' and *that* assignment causes getPropertyCSSValue to return nothing';
+}
+
+use tests 2; # parsing colours
+{ # Tests for problems with colours in cygwin’s perl (broken in 0.08; fixed
+  # in 0.09) and for bugs temporarily introduced while those problems were
+  # being addressed.
+ my $p = new CSS'DOM'PropertyParser;
+ $p->add_property(
+  'colours' => {
+    format => '<colour>+',
+   },
+ );
+ my $s = CSS'DOM'Style'parse(
+  "colours: rgb(0,0,0) rgb(1,1,1)", 
+   property_parser => $p
+ );
+ use CSS'DOM'Constants 'CSS_CUSTOM';
+ is $s->getPropertyCSSValue('colours')->cssValueType, CSS_CUSTOM,
+   'quantified <colour>s';
+ $p->add_property(
+  "agent" => {
+    format => '(<identifier> <colour>)',
+    properties => { "agent-name" => [1] }
+   }
+ );
+ $s->agent("honey #bee");
+ is $s->agentName, "honey #bee",
+  '#colour within paren group and not at the start of the group';
 }

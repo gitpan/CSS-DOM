@@ -1,5 +1,27 @@
 Revision history for CSS::DOM
 
+0.09
+      • The property parser no longer gets confused in cygwin’s  perl
+        5.10.0@34065 (maint;  aka ee8a906) when an rgb() colour comes
+        after something else in a property value.  This bug also  pro-
+        duced warnings.
+      • The property parser in cygwin’s perl no longer  gets  offsets
+        muddled  up  when  a  shorthand  property’s  format  contains
+        <colour> within a parenthetical group,  the  <colour>  is not
+        the first thing in  the  group  (e.g.,  ‘(<ident> <colour>)’),
+        and a value  assigned  has  a  colour  in  hex  format  (e.g.,
+       ‘honey #bee’,  which would cause just ‘#bee’,  not ‘honey #bee’
+        to be assigned to the subproperty).
+      • The property parser used  to  produces  warnings  and  create
+        CSS_CUSTOM value objects instead of ‘primitives’ when a short-
+        hand property is assigned to that has  named  properties  [RT
+        #54809]. This only occurred in perl 5.10.0. It turns out that
+        this perl version’s  $^N  is more buggy than I  realised  and
+        it’s not just cygwin’s  maint  snapshot  that  needs  special
+        treatment.
+      • CSS::DOM::Style’s  length  method no longer dies if no proper-
+        ties have been added [RT #54810].
+
 0.08    22 November, 2009
       • Incompatible change:  CSS::DOM::Value’s and CSS::DOM::Value::
         Primitive’s constructors’ interfaces have changed.  They  now

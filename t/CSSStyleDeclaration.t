@@ -103,9 +103,12 @@ $decl->setProperty('color','blue','very important');
 like $decl->cssText, qr/color: blue !very\\ important/,
 	'setProperty with space in the priority (and cssText afterwards)';
 
-use tests 3; # length
+use tests 4; # length
 {
-	my $decl = CSS::DOM::Style::parse(
+	my $decl = new CSS'DOM'Style;
+	is eval { $decl->length }, 0,  # This used to die [RT #54810]
+	  'length when no properties have been added';  # (fixed in 0.09).
+	$decl = CSS::DOM::Style::parse(
 		'color: red !\69mportant; foo:bar'
 	);
 	is $decl->length, 2, 'length';

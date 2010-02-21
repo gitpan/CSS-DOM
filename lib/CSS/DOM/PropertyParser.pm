@@ -1,6 +1,6 @@
 package CSS::DOM::PropertyParser;
 
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -11,13 +11,11 @@ use CSS'DOM'Util<unescape unescape_str unescape_url>;
 
 use constant'lexical old_perl => $] < 5.01;
 
-# cygwin includes perl 5.10.0@34065 (maint branch, not blead; aka ee3a906),
-# which has a bug affecting  $^N  (perl bug #56194).  We have a workaround,
-# but it requires more CPU,  so we only enable it on naughty  versions  of
-# perl (or,  rather,  perl versions installed  by  naughty  vendors).
-use constant'lexical naughty_perl => scalar(
- "ax" =~ /(.)((??{"."}))/, $^N eq 'a'
-);
+# perl 5.10.0 has a bug affecting $^N (perl bug #56194; not the initial
+# report, but regressions in 5.10; read the whole ticket for details). We
+# have a workaround, but it requires more CPU, so we only enable it for
+# this perl version.
+use constant'lexical naughty_perl => 0+$] eq 5.01;
 
 *s2c = *CSS'DOM'Constants'SuffixToConst;
 our %s2c;
@@ -106,7 +104,7 @@ sub match { SUB: {
 
  # Compile the formats of the sub-properties,  something we  can’t  do
  # during the pattern match, as compilation requires regular expressions
- # and perl’s re engine is not reëntrant.  This has to come before the for
+ # and perl’s re engine is not reëntrant. This has to come before the for-
  # mat for this property,  in case it relies on  list-style-type.  We  use
  # (??{...}) to pick it up,  but that is too buggy in perl 5.8.x, so, for
  # old perls,  we compile it straight in.  Consequently we also have to
@@ -498,7 +496,7 @@ sub _compile_format {
          f(?(?{$$prepped[pos()-1]eq"attr("})|(?!))i\)
        )' . "(?{ $type_is_ CSS_ATTR })" . cap_end . ")"
    : $3 =~ /^colou?r\z/ ?
-      "(?x:" . cap_start . "
+      "(?x:" . cap_start . "(?:
         ([i#](?(?{
           \$\$alt_types[pos()-1]eq 'c'||\$\$alt_types[pos()-1]eq 's'
         })|(?!))) (?{ $type_is_ (
@@ -513,8 +511,8 @@ sub _compile_format {
            (?(?{\$\$prepped[pos()-1]eq 'rgba('})|(?!))
            (?: $sign 1(?:,$sign 1){2} | $sign%(?:,$sign%){2} ),$sign 1
           )
-        \\)) (?{ $type_is_ CSS_RGBCOLOR })" . cap_end . "
-       )"
+        \\)) (?{ $type_is_ CSS_RGBCOLOR })
+       )" . cap_end . ")"
 
    # <counter> represents the following four:
    #  counter(<identifier>)
@@ -764,7 +762,7 @@ CSS::DOM::PropertyParser - Parser for CSS property values
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =head1 SYNOPSIS
 

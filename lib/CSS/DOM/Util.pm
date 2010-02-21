@@ -1,6 +1,6 @@
 package CSS::DOM::Util;
 
-$VERSION = '0.08';
+$VERSION = '0.09';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 
@@ -78,7 +78,7 @@ CSS::DOM::Util - Utility functions for dealing with CSS tokens
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =head SYNOPSIS
 
