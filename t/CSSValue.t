@@ -217,7 +217,7 @@ use tests 14; # writing cssText on inherit/custom values
   'modification_handler is called when a CSS::DOM::Value changes';
 }
  
-use tests 29; # writing cssText on ‘primitive’ values
+use tests 30; # writing cssText on ‘primitive’ values
 {
  my $v = new CSS::DOM::Value::Primitive
   type => &CSS::DOM::Value::Primitive::CSS_NUMBER, value => 43;
@@ -309,6 +309,22 @@ use tests 29; # writing cssText on ‘primitive’ values
  $s->getPropertyCSSValue('background-color')->cssText('white');
  is $called, 1,
   "modification_handler is called when a ‘primitive’ value changes";
+
+ # Bug in 0.08 and 0.09:  non-void context causes cssText not to write
+ # anything if the existing value is a string and there is no existing
+ # serialisation recorded.
+ $v = new CSS::DOM::Value::Primitive::
+  type => &CSS::DOM::Value::Primitive::CSS_STRING,
+  value => 'nin',
+  owner => $s,
+  property => 's',
+ ;
+ scalar $v->cssText("'squow'");
+ is $v->cssText, "'squow'",
+  'prim->cssText(...) in non-void cx sets the val if existing val is str'
+
+ # ~~~ We also need a test for list sub-values retaining their owner attri-
+ #     bute when they change type
 }
 
 use tests 10; # writing cssText on list values

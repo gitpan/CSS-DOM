@@ -1,4 +1,4 @@
-CSS::DOM, version 0.09
+CSS::DOM, version 0.10
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
@@ -8,8 +8,8 @@ CHANGES IN THIS RELEASE
 
 (See the Changes file for the long version.)
 
-Various bug fixes,  mainly related to the property parser getting con-
-fused and emitting warnings in perl 5.10.0.
+• New setFloatValue and setStringValue methods of CSS::DOM::Value::Primitive
+• A couple of fixes for obscure bugs
 
 
 INSTALLATION

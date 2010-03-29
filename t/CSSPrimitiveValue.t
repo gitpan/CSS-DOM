@@ -1,9 +1,11 @@
 #!/usr/bin/perl -T
 
 use strict; use warnings;
+no warnings<utf8 parenthesis regexp once qw bareword syntax>;
 our $tests;
 BEGIN { ++$INC{'tests.pm'} }
 sub tests'VERSION { $tests += pop };
+sub tests'import  { $tests += pop if @_ > 1 };
 use Test::More;
 plan tests => $tests;
 
@@ -33,6 +35,9 @@ sub test_isa {
  isa_ok $_[0], 'CSS::DOM::Value::Primitive', $_[1];
  ok $_[0]->DOES('CSS::DOM::Value'), "$_[1] DOES CSS::DOM::Value";
 }
+
+# -------------------------------------
+# Tests for isa, primitiveType and get*
 
 use tests 4; # numbers
 for(CSS::DOM::Value::Primitive->new(type => &CSS_NUMBER, value => 73)) {
@@ -316,7 +321,233 @@ for(CSS::DOM::Value::Primitive->new(
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after rgba->getFloatValue dies';
 }
-	
-# These need to be applied to all the types above:
-# ~~~ setFloatValue getFloatValue setStringValue
-#     getStringValue getCounterValue getRectValue getRGBColorValue
+
+# ------------------------------------------
+# Tests for setFloatValue and setStringValue
+
+use CSS'DOM'Style;
+require CSS::DOM::PropertyParser;
+my $s = new CSS'DOM'Style
+ property_parser => $CSS::DOM::PropertyParser::Default;
+
+for my $meth ('setFloatValue' ,'setStringValue'){
+
+use tests 6; # read-only properties
+ my $v = new CSS::DOM::Value::Primitive
+  type => &CSS::DOM::Value::Primitive::CSS_NUMBER, value => 43;
+ ok !eval{ $v->$meth(&CSS_IN, 1); 1 },
+  qq'calling $meth on an unowned primitive value object dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  qq'class of error after primitive->$meth dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::NO_MODIFICATION_ALLOWED_ERR,
+  qq'and the right type of error, too (after primitive->$meth dies)';
+
+use tests +26*3*2; # errors for invalid types
+ $s->backgroundImage('url(scrat)');
+ $v = $s->getPropertyCSSValue('background-image');
+ for(qw<UNKNOWN NUMBER PERCENTAGE EMS EXS PX CM MM IN PT PC DEG RAD GRAD MS
+        S HZ KHZ DIMENSION STRING IDENT ATTR COUNTER RECT RGBCOLOR>) {
+  ok !eval{ $v->$meth(eval"CSS_$_", 1); 1 },
+   qq '$meth(CSS_$_) dies when the property does not support it';
+  isa_ok $@, 'CSS::DOM::Exception',
+   qq'class of error after primitive->$meth(&CSS_$_) dies';
+  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+   qq'and the right type of error, too (after $meth(&CSS_$_) dies)';
+ }
+ $s->backgroundColor('#bad');
+ $v = $s->getPropertyCSSValue('background-color');
+ ok !eval{ $v->$meth(&CSS_URI, 1); 1 },
+    qq'setFloatValue(CSS_URI) dies when the property does not support it';
+ isa_ok $@, 'CSS::DOM::Exception',
+        qq'class of error after primitive->$meth(&CSS_URI) dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+        qq'and the right type of error, too (after $meth(&CSS_URI) dies)';
+
+use tests 4; # retval and CSS_NUMBER
+ $s->marginTop('4px');
+ is +()=$s->getPropertyCSSValue('margin-top')->$meth(&CSS_NUMBER, 0), 0,
+    "$meth returns nothing";
+ is $s->marginTop, 0, "successful $meth(CSS_NUMBER)";
+
+use tests 2; # CSS_PERCENTAGE
+ $s->height('4px');
+ ($v = $s->getPropertyCSSValue('height'))->$meth(&CSS_PERCENTAGE, 50);
+ is $s->height, '50%', "successful $meth(CSS_PERCENTAGE)";
+
+use tests 2; # CSS_EMS
+ $v->$meth(&CSS_EMS, 50);
+ is $s->height, '50em', "successful $meth(CSS_EMS)";
+
+use tests 2; # CSS_EXS
+ $v->$meth(&CSS_EXS, 50);
+ is $s->height, '50ex', "successful $meth(CSS_EXS)";
+
+use tests 2; # CSS_PX
+ $v->$meth(&CSS_PX, 50);
+ is $s->height, '50px', "successful $meth(CSS_PX)";
+
+use tests 2; # CSS_CM
+ $v->$meth(&CSS_CM, 50);
+ is $s->height, '50cm', "successful $meth(CSS_CM)";
+
+use tests 2; # CSS_MM
+ $v->$meth(&CSS_MM, 50);
+ is $s->height, '50mm', "successful $meth(CSS_MM)";
+
+use tests 2; # CSS_IN
+ $v->$meth(&CSS_IN, 50);
+ is $s->height, '50in', "successful $meth(CSS_IN)";
+
+use tests 2; # CSS_PT
+ $v->$meth(&CSS_PT, 50);
+ is $s->height, '50pt', "successful $meth(CSS_PT)";
+
+use tests 2; # CSS_PC
+ $v->$meth(&CSS_PC, 50);
+ is $s->height, '50pc', "successful $meth(CSS_PC)";
+
+use tests 2; # CSS_DEG
+ $s->azimuth('5rad');
+ ($v = $s->getPropertyCSSValue('azimuth'))->$meth(&CSS_DEG, 50);
+ is $s->azimuth, '50deg', "successful $meth(CSS_DEG)";
+
+use tests 2; # CSS_RAD
+ $v->$meth(&CSS_RAD, 50);
+ is $s->azimuth, '50rad', "successful $meth(CSS_RAD)";
+
+use tests 2; # CSS_GRAD
+ $v->$meth(&CSS_GRAD, 50);
+ is $s->azimuth, '50grad', "successful $meth(CSS_GRAD)";
+
+use tests 2; # CSS_MS
+ $s->pauseAfter('5s');
+ ($v = $s->getPropertyCSSValue('pause-after'))->$meth(&CSS_MS, 50);
+ is $s->pauseAfter, '50ms', "successful $meth(CSS_MS)";
+
+use tests 2; # CSS_S
+ $v->$meth(&CSS_S, 50);
+ is $s->pauseAfter, '50s', "successful $meth(CSS_S)";
+
+use tests 2; # CSS_HZ
+ $s->pitch('5khz');
+ ($v = $s->getPropertyCSSValue('pitch'))->$meth(&CSS_HZ, 50);
+ is lc $s->pitch, '50hz', "successful $meth(CSS_HZ)";
+
+use tests 2; # CSS_KHZ
+ $v->$meth(&CSS_KHZ, 30);
+ is lc $s->pitch, '30khz', "successful $meth(CSS_KHZ)";
+
+use tests 2; # CSS_STRING
+ $s->quotes('"‘" "’"');
+ $s->getPropertyCSSValue('quotes')->[0]->$meth(&CSS_STRING, 50);
+ like $s->quotes, qr/^(['"])50\1\s+(['"])’\2\z/,
+     "successful $meth(CSS_STRING)";
+
+use tests 2; # CSS_URI
+ $s->content('""');
+ ($v = $s->getPropertyCSSValue('content')->[0])->$meth(&CSS_URI, 50);
+ is $s->content, 'url(50)',
+     "successful $meth(CSS_URI)";
+
+use tests 2; # CSS_IDENT
+ # This test also checks that sub-values of a list do not lose their inter-
+ # nal owner attribute when they change type (bug in 0.08 and 0.09).
+ $v->$meth(&CSS_IDENT, 'open-quote');
+ is $s->content, 'open-quote', "successful $meth(CSS_IDENT)";
+
+use tests 2; # CSS_ATTR
+ $v->$meth(&CSS_ATTR, 'open-quote');
+ is $s->content, 'attr(open-quote)', "successful $meth(CSS_attr)";
+
+}
+
+__END__ ~~~ I need to finish converting the rest of these tests
+
+
+
+ $s->backgroundImage('url(dwow)');
+ $v = $s->getPropertyCSSValue('background-image');
+ is $v->cssText('none'), 'url(dwow)',
+  'setting cssText returns the old value';
+ is $s->backgroundImage, 'none',
+  'prim_value->cssText("...") sets the owner CSS property';
+ is $v->primitiveType, &CSS::DOM::Value::Primitive::CSS_IDENT,
+  ' prim->cssText sets the “primitive” type';
+ is $v->cssText, 'none',
+  ' prim->cssText sets the value object\'s own cssText';
+
+ # We re-use the same value on purpose, to make sure the change in type did
+ # not discard the internal owner attribute.
+ $v->cssText('inherit');
+ is $s->backgroundImage, 'inherit',
+  'setting the cssText of a primitive value to inherit changes the prop';
+ is $v->cssText, 'inherit',
+  'setting the cssText of a prim val to inherit changes its cssText';
+ is $v->cssValueType, &CSS_INHERIT,
+  'value type after setting a primitive value to inherit';
+ isa_ok $v, "CSS::DOM::Value",
+  'object class after setting a primitive value to inherit';
+
+ $s->clip('rect(0,0,0,0)');
+ $v = $s->getPropertyCSSValue('clip')->top;
+ $v->cssText('red');
+ is $v->cssText, 0,
+  'setting cssText on a sub-value of a rect to a colour does nothing';
+ $v->cssText(50);
+ is $v->cssText, 0,
+  'setting cssText on a rect’s sub-value to a non-zero num does nothing';
+ $v->cssText('5px');
+ is $v->cssText, '5px',
+  'setting cssText on a sub-value of a rect to 5px works';
+ is $v->primitiveType, &CSS::DOM::Value::Primitive::CSS_PX,
+  'setting cssText on a sub-value of a rect to 5px changes the prim type';
+ like $s->clip, qr/^rect\(5px,\s*0,\s*0,\s*0\)\z/,
+  'setting cssText on a sub-value of a rect changes the prop that owns it';
+ $v->cssText('auto');
+ is $v->cssText, 'auto', 'rect sub-values can be set to auto';
+ $v->cssText('bdelp');
+ is $v->cssText, 'auto', 'but not to any other identifier';
+
+ $s->color('#c0ffee');
+ $v = (my $clr = $s->getPropertyCSSValue('color'))->red;
+ $v->cssText('red');
+ is $v->cssText, 192,
+  'setting cssText on a sub-value of a colour to a colour does nothing';
+ $v->cssText('255');
+ is $v->cssText, '255',
+  'setting cssText on a sub-value of a colour to 255 works';
+ is $clr->cssText, '#ffffee',
+  'changing a colour’s sub-value sets the colour’s cssText';
+ $v->cssText('50%');
+ is $v->cssText, '50%',
+  'setting cssText on a sub-value of a colour to 50% works';
+ is $v->primitiveType, &CSS::DOM::Value::Primitive::CSS_PERCENTAGE,
+  'changing the cssText of a colour’s sub-value changes the prim type';
+ like $clr->cssText, qr/^rgb\(127.5,\s*255,\s*238\)\z/,
+  'the colour’s cssText after making the subvalues mixed numbers & %’s';
+ $v = $clr->alpha;
+ $v->cssText('50%');
+ is $v->cssText, 1,
+  'alpha values ignore assignments of percentage values to cssText';
+ $v->cssText(.5);
+ is $v->cssText, .5,
+  'but number assignments (to alpha values’ cssText) work';
+ like $clr->cssText, qr/^rgba\(127.5,\s*255,\s*238,\s*0.5\)\z/,
+  'the colour’s cssText after making the subvalues mixed numbers & %’s';
+
+ $v = $s->getPropertyCSSValue('color');
+ $v->cssText('activeborder');;
+ is $v->primitiveType, &CSS::DOM::Value::Primitive::CSS_IDENT,
+  'setting a colour property’s cssText to a sys. colour makes it an ident';
+
+ $s->backgroundColor('red');
+ my $called;
+ $s->modification_handler(sub { ++$called });
+ $s->getPropertyCSSValue('background-color')->cssText('white');
+ is $called, 1,
+  "modification_handler is called when a ‘primitive’ value changes";
+}
+
+
+# Methods that still need testing:
+# ~~~ getStringValue getCounterValue getRectValue getRGBColorValue

@@ -1,13 +1,17 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 require CSS::DOM::Constants;
 
 =head1 NAME
 
 CSS::DOM::Interface - A list of CSS::DOM's interface members in machine-readable format
+
+=head1 VERSION
+
+Version 0.10
 
 =head1 SYNOPSIS
 

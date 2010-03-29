@@ -1,6 +1,18 @@
 Revision history for CSS::DOM
 
-0.09
+0.10    28 March, 2010
+      • New setFloatValue and setStringValue methods of CSS::DOM::Val-
+        ue::Primitive
+      • Bug fix: CSS::DOM::Value::Primitive’s cssText did not set the
+        value when passed an argument if the  existing  value  was  a
+        string and there was no existing serialisation  recorded  (as
+        happens if you call the constructor directly  without  provid-
+        ing the css argument).
+      • Bug fix:  Sub-value objects of a list value  used  to  become
+       ‘unowned’ if their type changed (via cssText assignment),  mak-
+        ing further modification attempts fail.
+
+0.09    21 February, 2010
       • The property parser no longer gets confused in cygwin’s  perl
         5.10.0@34065 (maint;  aka ee8a906) when an rgb() colour comes
         after something else in a property value.  This bug also  pro-
@@ -14,7 +26,7 @@ Revision history for CSS::DOM
         to be assigned to the subproperty).
       • The property parser used  to  produces  warnings  and  create
         CSS_CUSTOM value objects instead of ‘primitives’ when a short-
-        hand property is assigned to that has  named  properties  [RT
+        hand property was assigned to that had named  properties  [RT
         #54809]. This only occurred in perl 5.10.0. It turns out that
         this perl version’s  $^N  is more buggy than I  realised  and
         it’s not just cygwin’s  maint  snapshot  that  needs  special

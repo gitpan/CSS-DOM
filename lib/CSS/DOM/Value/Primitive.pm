@@ -1,6 +1,6 @@
 package CSS::DOM::Value::Primitive;
 
-$VERSION = '0.09';
+$VERSION = '0.10';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -77,11 +77,7 @@ sub cssText {
 		else { for($self->[type]) {
 			my $val = $self->[valu];
 			$old
-			 = $_ == CSS_ATTR
-			    ? 'attr(' . $val . ')'
-			 : $_ == CSS_URI
-			    ? 'url(' . $val.  ')'
-			 : $_ == CSS_RECT 
+			 = $_ == CSS_RECT 
 			    ? 'rect('
 			     .  join(
 			         ', ',
@@ -203,26 +199,7 @@ sub cssText {
 			       : $val =~ /^#/
 			         ? $val
 			         : escape_ident $val
-			 : $_ == CSS_STRING
-			    ? do {
-			       (my $str = $val) =~ s/'/\\'/g;;
-			       return "'$str'";
-			      }
-			 : $_ == CSS_COUNTER
-			    ? 'counter' . 's' x defined($$val[sepa]) . '('
-			      . escape_ident($$val[name])
-			      . (defined $$val[sepa]
-			         ? ", " . escape_str($$val[sepa])
-			         : '' )
-			      . (defined $$val[styl]
-			         ? ", " . escape_ident($$val[styl])
-			         : '' )
-			      . ")"
-			 : $_ == CSS_DIMENSION
-			    ? $$val[0].escape_ident$$val[1]
-			 :    $unit_suffixes[$_]
-			       ? 0+$val . $unit_suffixes[$_]
-			       : $val;
+			 :   _serialise($_,$val)
 		}}
 	}
 	if(@_) {
@@ -288,7 +265,11 @@ sub cssText {
 			    );
 			require CSS'DOM'Value;
 			CSS'DOM'Value'_load_if_necessary($arsg[1]);
-			my $list = $arsg[1]->new(@arsg[2..$#arsg]);
+			my $list = $arsg[1]->new(
+			 owner => $owner,
+			 property => $prop,
+			 @arsg[2..$#arsg]
+			);
 			if($list->length != $length) {
 					# This would mean we were given a
 					# string with commas or a blank
@@ -316,9 +297,66 @@ sub cssText {
 	$old;
 }
 
+sub _serialise {
+ my ($type, $val) = @_;
+ for($type) {
+   no warnings 'numeric';
+   return
+      $_ == CSS_ATTR
+       ? 'attr(' . $val . ')'
+    : $_ == CSS_URI
+       ? 'url(' . $val.  ')'
+    : $_ == CSS_RECT 
+       ? die "_serialise does not support rects"
+    : $_ == CSS_RGBCOLOR
+       ? die "_serialise does not support colours"
+    : $_ == CSS_STRING
+       ? do {
+          (my $str = $val) =~ s/'/\\'/g;;
+          return "'$str'";
+         }
+    : $_ == CSS_COUNTER
+       ? 'counter' . 's' x defined($$val[sepa]) . '('
+         . escape_ident($$val[name])
+         . (defined $$val[sepa]
+            ? ", " . escape_str($$val[sepa])
+            : '' )
+         . (defined $$val[styl]
+            ? ", " . escape_ident($$val[styl])
+            : '' )
+         . ")"
+    : $_ == CSS_DIMENSION
+       ? $$val[0].escape_ident$$val[1]
+    : $_ == CSS_NUMBER
+       ? 0+$val
+    :    $unit_suffixes[$_]
+          ? 0+$val . $unit_suffixes[$_]
+          : $val;
+ }
+
+}
+
 sub cssValueType { CSS::DOM::Value::CSS_PRIMITIVE_VALUE }
 
 sub primitiveType { shift->[type] }
+
+sub setFloatValue {
+  my ($self,$type,$val) = @'_;
+
+  require CSS'DOM'Exception,
+  die new CSS'DOM'Exception INVALID_ACCESS_ERR, "Invalid value type"
+   if $type == CSS_UNKNOWN || $type == CSS_COUNTER
+   || $type == CSS_RECT || $type == CSS_RGBCOLOR || $type == CSS_DIMENSION;
+
+  # This is not particularly efficient, but I doubt anyone is actually
+  # using this API.
+  no warnings 'numeric';
+  $self->cssText(my $css = _serialise($type, $val));
+  require CSS'DOM'Exception,
+  die new CSS'DOM'Exception INVALID_ACCESS_ERR, "Invalid value: $css"
+   if $self->cssText ne $css;
+ _:
+}
 
 sub getFloatValue {
  my $self = shift;
@@ -335,6 +373,8 @@ sub getFloatValue {
  no warnings"numeric";
  0+($type == CSS_DIMENSION ? $$self[valu][0] : $$self[valu])
 }
+
+*setStringValue = *setFloatValue;
 
 # ------------- Rect interface --------------- #
 
@@ -418,7 +458,7 @@ CSS::DOM::Value::Primitive - CSSPrimitiveValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =head1 SYNOPSIS
 

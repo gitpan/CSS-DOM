@@ -3,7 +3,7 @@ package CSS::DOM::Exception;
 use CSS::DOM::Constants;
 use Exporter 5.57 'import';
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 *EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{exception};
 our %EXPORT_TAGS = (all => [@EXPORT_OK]);

@@ -1,6 +1,6 @@
 package CSS::DOM::Constants;
 
-$VERSION = '0.09';
+$VERSION = '0.10';
 
 use Exporter 5.57 'import';
 
@@ -136,7 +136,7 @@ CSS::DOM::Constants - Constants for CSS::DOM
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =head1 SYNOPSIS
 

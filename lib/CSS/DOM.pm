@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.09';
+$VERSION = '0.10';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -279,7 +279,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -785,11 +785,15 @@ things will go awry.
 This is because we can’t change a list into a prim and vice versa, because
 one is a hash and the other is an array.
 
+Whitespace and comments are sometimes preserved in serialised CSS and 
+sometimes not.
+Expect inconsistency.
+
 To report bugs, please e-mail the author.
 
 =head1 AUTHOR & COPYRIGHT
 
-Copyright (C) 2007-9 Father Chrysostomos <sprout [at] cpan
+Copyright (C) 2007-10 Father Chrysostomos <sprout [at] cpan
 [dot] org>
 
 This program is free software; you may redistribute it and/or modify
