@@ -6,7 +6,6 @@ my %prq = (
 	 Carp                         => 1.01, # @CARP_NOT
 	 Clone                        =>  .09, # coderefs
 	 constant                     => 1.03, # multiple at once
-	'constant::lexical'           => 0,
 	 Encode                       => 2.1,  # LEAVE_SRC
 	 Exporter                     => 5.57, # use Exporter 'import';
 	'Graphics::ColorNames::SVG'   => 0,

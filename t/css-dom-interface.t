@@ -1,5 +1,8 @@
 #!/usr/bin/perl -T
 
+# ~~~ This could be rewritten to load the modules and check that the
+#     methods it finds are listed in ::Interface. And vice versa.
+
 use strict; use warnings;
 our $tests;
 BEGIN { ++$INC{'tests.pm'} }
@@ -72,3 +75,13 @@ ok exists $CSS::DOM::Interface{CSSValueList}{$_},
  "list value ->$_"
    for <item length>;
 ok $CSS::DOM::Interface{CSSValueList}{_array};
+
+use tests 2; # changes in 0.11 (that should have been made in 0.10)
+ok exists $CSS::DOM::Interface{CSSPrimitiveValue}{setFloatValue},
+ 'setFloatValue';
+ok exists $CSS::DOM::Interface{CSSPrimitiveValue}{setStringValue},
+ 'setStringValue';;
+
+use tests 1; # another change in 0.11
+ok exists $CSS::DOM::Interface{CSSStyleDeclaration}{opacity},
+ 'opacity';

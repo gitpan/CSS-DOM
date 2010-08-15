@@ -1,6 +1,6 @@
 package CSS::DOM::PropertyParser;
 
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -762,7 +762,7 @@ CSS::DOM::PropertyParser - Parser for CSS property values
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =head1 SYNOPSIS
 

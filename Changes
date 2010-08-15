@@ -1,5 +1,12 @@
 Revision history for CSS::DOM
 
+0.11    15 August, 2010
+      • setStringValue  and  setFloatValue  are  now  listed  in
+        CSS::DOM::Interface.
+      • CSS::DOM::Style’s  opacity  property is  now  listed  in
+        CSS::DOM::Interface. (This is a temporary workaround for
+        a design flaw.)
+
 0.10    28 March, 2010
       • New setFloatValue and setStringValue methods of CSS::DOM::Val-
         ue::Primitive

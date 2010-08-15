@@ -1,6 +1,6 @@
 package CSS::DOM::Style;
 
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 use warnings; no warnings qw' utf8';
 use strict;
@@ -315,7 +315,7 @@ CSS::DOM::Style - CSS style declaration class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =head1 SYNOPSIS
 
