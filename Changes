@@ -1,5 +1,10 @@
 Revision history for CSS::DOM
 
+0.12    22 August, 2010
+        Fix dependency problem introduced in 0.11. (I tried to remove
+        the dependency on constant::lexical,  gave up and reverted my
+        changes, but forgot to add it back to Makefile.PL.  Oh well.)
+
 0.11    15 August, 2010
       • setStringValue  and  setFloatValue  are  now  listed  in
         CSS::DOM::Interface.

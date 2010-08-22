@@ -1,6 +1,6 @@
 package CSS::DOM::Value;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -11,13 +11,13 @@ use CSS'DOM'Exception 'NO_MODIFICATION_ALLOWED_ERR';
 use Exporter 5.57 'import';
 use Scalar'Util < weaken reftype >;
 
-no constant 1.03 ();
-use constant::lexical {
+use constant 1.03 our $_const = {
     type => 0,
     valu => 1,
     ownr => 2,
     prop => 3,
 };
+{ no strict; delete @{__PACKAGE__.'::'}{_const => keys %{our $_const}} }
 
 *EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{value};
 our %EXPORT_TAGS = ( all => \our @EXPORT_OK );
@@ -98,7 +98,7 @@ CSS::DOM::Value - CSSValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 

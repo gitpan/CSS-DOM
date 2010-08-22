@@ -1,6 +1,6 @@
 package CSS::DOM::Rule::Page;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -10,11 +10,12 @@ use CSS::DOM::Exception qw/ SYNTAX_ERR /;
 
 our @ISA = 'CSS::DOM::Rule';
 
-no constant 1.03 ();
-use constant::lexical { # Don't let this conflict with the superclass.
+use constant 1.03 our $_const = {
+# Don't let this conflict with the superclass.
 	styl => 2,
 	selc => 3,
 };
+{ no strict; delete @{__PACKAGE__.'::'}{_const => keys %{our $_const}} }
 
 # overrides:
 
@@ -72,7 +73,7 @@ CSS::DOM::Rule::Page - CSS @page rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 

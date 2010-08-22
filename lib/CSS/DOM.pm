@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -16,8 +16,7 @@ use Scalar::Util 'weaken';
 
 require CSS::DOM::RuleList;
 
-no constant 1.03 ();
-use constant::lexical {
+use constant 1.03 our $_constants = {
 	ruls => 0,
 	ownr => 1, # owner rule
 	node => 2, # owner node
@@ -28,6 +27,7 @@ use constant::lexical {
 	prsh => 7, # parent sheet
 	prpp => 8, # property parser
 };
+{ no strict; delete @CSS::DOM::{_constants => keys %{our $_constants}} }
 
 
 # NON-DOM METHODS
@@ -279,7 +279,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -754,13 +754,9 @@ perl 5.8.2 or higher
 
 L<Exporter> 5.57 or later
 
-L<constant::lexical>
-
 L<Encode> 2.10 or higher
 
 L<Clone> 0.09 or higher
-
-L<Graphics::ColorNames::SVG>
 
 =head1 BUGS
 

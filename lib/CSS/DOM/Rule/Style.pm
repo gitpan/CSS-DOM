@@ -1,6 +1,6 @@
 package CSS::DOM::Rule::Style;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use warnings;
 use strict;
@@ -10,11 +10,12 @@ use CSS::DOM::Exception qw/ SYNTAX_ERR /;
 
 our @ISA = 'CSS::DOM::Rule';
 
-no constant 1.03 ();
-use constant::lexical { # Don't let this conflict with the superclass.
+use constant 1.03 our $_const = {
+# Don't let this conflict with the superclass.
 	styl => 2,
 	selc => 3,
 };
+{ no strict; delete @{__PACKAGE__.'::'}{_const => keys %{our $_const}} }
 
 # overrides:
 sub type { CSS::DOM::Rule::STYLE_RULE }
@@ -351,7 +352,7 @@ CSS::DOM::Rule::Style - CSS style rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 

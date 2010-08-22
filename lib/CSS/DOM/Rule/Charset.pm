@@ -1,6 +1,6 @@
 package CSS::DOM::Rule::Charset;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -10,8 +10,9 @@ use CSS::DOM::Util 'escape';
 
 our @ISA = 'CSS::DOM::Rule';
 
-use constant::lexical # Don't let this conflict with the superclass.
+use constant # Don't let this conflict with the superclass.
 	cset => 2;
+{ no strict 'refs'; delete ${__PACKAGE__.'::'}{cset} }
 
 # overrides:
 
@@ -48,7 +49,7 @@ CSS::DOM::Rule::FontFace - CSS @font-face rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 

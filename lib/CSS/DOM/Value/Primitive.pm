@@ -1,6 +1,6 @@
 package CSS::DOM::Value::Primitive;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -20,8 +20,7 @@ sub DOES {
  goto &UNIVERSAL'DOES if defined &UNIVERSAL'DOES;
 }
 
-no constant 1.03 ();
-use constant::lexical { # Don’t conflict with the superclass!
+use constant 1.03 our $_const = { # Don’t conflict with the superclass!
     type => 2,
     valu => 3,  # counters
     csst => 4,  name => 0,
@@ -31,6 +30,7 @@ use constant::lexical { # Don’t conflict with the superclass!
     form => 8,
     sfrm => 9, # serialisation format; used currently only by colours
 };
+{ no strict; delete @{__PACKAGE__.'::'}{_const => keys %{our $_const}} }
 
 *EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{primitive};
 our %EXPORT_TAGS = ( all => \our @EXPORT_OK );
@@ -150,11 +150,11 @@ sub cssText {
 			           else { # named colour
 			            my $rgb = (\our %Colours)->{lc $form};
 			            $val_objs[0]->getFloatValue
-			             == $rgb >> 16
+			             == $$rgb[0]
 			            and $val_objs[1]->getFloatValue
-			             == ($rgb >> 8 & 255)
+			             == $$rgb[1]
 			            and $val_objs[2]->getFloatValue
-			             == ($rgb & 255)
+			             == $$rgb[2]
 			            and $ret = $form;
 			           }
 			          }
@@ -412,14 +412,12 @@ sub _autoviv_colour_value {
    ];
   }
   else {
-   our %Colours or *Colours = (
-    require Graphics'ColorNames'SVG, NamesRgbTable Graphics'ColorNames'SVG
-   );
+   our %Colours or require "CSS/DOM/Value/Primitive/colours.pl";
    my $rgb = $Colours{lc($$self[sfrm] = $$self[valu])};
    $$self[valu] = [
     map
      [type => CSS_NUMBER, value => $_],
-     $rgb >> 16, $rgb >> 8 & 255, $rgb & 255
+     @$rgb
    ];
   }
  }
@@ -458,7 +456,7 @@ CSS::DOM::Value::Primitive - CSSPrimitiveValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 

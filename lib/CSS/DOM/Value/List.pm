@@ -1,10 +1,9 @@
 package CSS::DOM::Value::List;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use CSS'DOM'Constants <CSS_VALUE_LIST NO_MODIFICATION_ALLOWED_ERR>;
 use Scalar'Util 'weaken';
-use Tie::Util ();
 
 # Object of this class are hashes, with the following keys:
 # c: CSS code
@@ -20,7 +19,7 @@ sub DOES {
 
 use overload
   fallback => 1,
- '@{}' => sub { tie my @shext, to => shift; \@shext };
+ '@{}' => sub { tie my @shext, __PACKAGE__, shift; \@shext };
 
 sub new {
  my $class = shift;
@@ -102,7 +101,7 @@ sub length { scalar @{ shift->{v} || return 0 } }
 
 *FETCH =  *item;
 *FETCHSIZE =  *length;
-
+sub TIEARRAY { $_[1] }
 
 
 
@@ -114,7 +113,7 @@ CSS::DOM::Value::List - CSSValueList class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 

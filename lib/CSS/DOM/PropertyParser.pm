@@ -1,6 +1,6 @@
 package CSS::DOM::PropertyParser;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -9,13 +9,15 @@ use constant 1.03 (); # multiple
 use CSS::DOM'Constants ':primitive', ':value';
 use CSS'DOM'Util<unescape unescape_str unescape_url>;
 
-use constant'lexical old_perl => $] < 5.01;
+use constant old_perl => $] < 5.01;
+{ no strict 'refs'; delete ${__PACKAGE__.'::'}{old_perl} }
 
 # perl 5.10.0 has a bug affecting $^N (perl bug #56194; not the initial
 # report, but regressions in 5.10; read the whole ticket for details). We
 # have a workaround, but it requires more CPU, so we only enable it for
 # this perl version.
-use constant'lexical naughty_perl => 0+$] eq 5.01;
+use constant naughty_perl => 0+$] eq 5.01;
+{ no strict 'refs'; delete ${__PACKAGE__.'::'}{naughty_perl} }
 
 *s2c = *CSS'DOM'Constants'SuffixToConst;
 our %s2c;
@@ -388,6 +390,10 @@ my $type_is_dim_or_number
       = $$prepped[pos()-1] ? $s2c{ $$prepped[pos()-1] } : CSS_NUMBER
     })';
 
+# Constants defined in _compile_format and only used there get deleted at
+# run time.
+{ no strict 'refs'; delete @{__PACKAGE__.'::'}{cap_start=>cap_end=>} }
+
 sub _compile_format {
  my $format = shift;
  my $no_match_stuff = shift; # Leave out the @%match localisation stuff
@@ -475,7 +481,7 @@ sub _compile_format {
   next if $1;  # ignore whitespace
 
   # cygwin hack:
-  use constant'lexical {  # re-evals for before and after captures
+  use constant {  # re-evals for before and after captures
    cap_start => naughty_perl ? '(?{local @pos=(@pos,pos)})' : '',
    cap_end   => naughty_perl ? '(?{local @pos=@pos; --$#pos})' : '',
   };
@@ -762,7 +768,7 @@ CSS::DOM::PropertyParser - Parser for CSS property values
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 

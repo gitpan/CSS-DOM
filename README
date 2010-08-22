@@ -1,13 +1,19 @@
-CSS::DOM, version 0.11
+CSS::DOM, version 0.12
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
 
 
-CHANGES IN THIS RELEASE
+RECENT CHANGES
 
-(See the Changes file for the long version.)
+0.012
+-----
+Fix dependency problem introduced in 0.11.  (I tried  to  remove  the
+dependency on constant::lexical, gave up and reverted my changes, but
+forgot to add it back to Makefile.PL. Oh well.)
 
+0.011
+-----
 • setStringValue and setFloatValue  are now listed in CSS::DOM::Inter-
   face.
 • CSS::DOM::Style’s opacity property is now listed in CSS::DOM::Inter-
@@ -35,11 +41,9 @@ DEPENDENCIES
 
 This module requires perl 5.8.2 or later, and the following modules:
 
-• constant::lexical
 • Exporter 5.57 or later
 • Encode 2.10 or later
 • Clone 0.09 or later
-• Graphics::ColorNames::SVG
 
 
 DOCUMENTATION

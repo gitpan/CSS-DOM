@@ -1,6 +1,6 @@
 package CSS::DOM::Rule;
 
-$VERSION = '0.11';
+$VERSION = '0.12';
 
 use warnings;
 use strict;
@@ -14,13 +14,14 @@ use Scalar::Util 'weaken';
 *EXPORT_OK = $CSS::DOM::Constants::EXPORT_TAGS{rule};
 our %EXPORT_TAGS = (all => \our @EXPORT_OK);
 
-no constant 1.03 ();
-use constant::lexical { # Don’t let these conflict with subclasses!
+use constant 1.03 our $_const = {
+# Don’t let these conflict with subclasses!
 	prnt => 0,
 	shet => 1,
 	typs => 2, # token types   These two are not used by subclassed,
 	tokn => 3, # tokens        so there’s no chance of a conflict.
 };
+{ no strict; delete @{__PACKAGE__.'::'}{_const => keys %{our $_const}} }
 
 sub new {
 	my $self = bless[],shift;
@@ -87,7 +88,7 @@ CSS::DOM::Rule - CSS rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =head1 SYNOPSIS
 
