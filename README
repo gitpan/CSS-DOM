@@ -1,10 +1,15 @@
-CSS::DOM, version 0.12
+CSS::DOM, version 0.13
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
 
 
 RECENT CHANGES
+
+0.013
+-----
+Oops. Fix another problem, introduced in 0.12. I forgot to add a file
+to MANIFEST. (I *thought* I had run make disttest.)
 
 0.012
 -----

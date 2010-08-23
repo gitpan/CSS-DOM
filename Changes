@@ -1,5 +1,10 @@
 Revision history for CSS::DOM
 
+0.13    22 August, 2010
+        Oops.  Fix another problem,  introduced in 0.12.  I forgot to
+        add  a  file  to  MANIFEST.  (I  *thought*  I  had  run  make
+        disttest.)
+
 0.12    22 August, 2010
         Fix dependency problem introduced in 0.11. (I tried to remove
         the dependency on constant::lexical,  gave up and reverted my

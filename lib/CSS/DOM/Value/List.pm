@@ -1,6 +1,6 @@
 package CSS::DOM::Value::List;
 
-$VERSION = '0.12';
+$VERSION = '0.13';
 
 use CSS'DOM'Constants <CSS_VALUE_LIST NO_MODIFICATION_ALLOWED_ERR>;
 use Scalar'Util 'weaken';
@@ -113,7 +113,7 @@ CSS::DOM::Value::List - CSSValueList class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.12
+Version 0.13
 
 =head1 SYNOPSIS
 

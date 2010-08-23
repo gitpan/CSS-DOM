@@ -20,6 +20,7 @@ lib/CSS/DOM/StyleSheetList.pm
 lib/CSS/DOM/Util.pm
 lib/CSS/DOM/Value.pm
 lib/CSS/DOM/Value/List.pm
+lib/CSS/DOM/Value/Primitive/colours.pl
 lib/CSS/DOM/Value/Primitive.pm
 Makefile.PL
 MANIFEST
