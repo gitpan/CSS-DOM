@@ -24,6 +24,7 @@ WriteMakefile(
     AUTHOR         => 'Father Chrysostomos <sprout & cpan . org>',
     VERSION_FROM   => 'lib/CSS/DOM.pm',
     ABSTRACT_FROM  => 'lib/CSS/DOM.pm',
+    LICENSE        => 'perl',
     PL_FILES       => {},
     PREREQ_PM      => \%prq,
     dist           => { COMPRESS => 'gzip -9f', SUFFIX => 'gz',

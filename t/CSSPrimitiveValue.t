@@ -39,128 +39,213 @@ sub test_isa {
 # -------------------------------------
 # Tests for isa, primitiveType and get*
 
-use tests 4; # numbers
+use tests 7; # numbers
 for(CSS::DOM::Value::Primitive->new(type => &CSS_NUMBER, value => 73)) {
  test_isa $_, 'number value';
  is $_->primitiveType, &CSS_NUMBER, 'number->primitiveType';
  is $_->getFloatValue, 73, 'number->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'number->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after number->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after number->getStringValue dies';
 }
 
-use tests 4; # %
+use tests 7; # %
 for(
  CSS::DOM::Value::Primitive->new(type => &CSS_PERCENTAGE, value => 73)
 ) {
  test_isa $_, '% value';
  is $_->primitiveType, &CSS_PERCENTAGE, '%->primitiveType';
  is $_->getFloatValue, 73, '%->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, '%->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after %->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after %->getStringValue dies';
 }
 
-use tests 4; # M
+use tests 7; # M
 for(CSS::DOM::Value::Primitive->new(type => &CSS_EMS, value => 73)) {
  test_isa $_, 'em value';
  is $_->primitiveType, &CSS_EMS, 'em->primitiveType';
  is $_->getFloatValue, 73, 'em->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'em->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after em->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after em->getStringValue dies';
 }
 
-use tests 4; # X
+use tests 7; # X
 for(CSS::DOM::Value::Primitive->new(type => &CSS_EXS, value => 73)) {
  test_isa $_, 'ex value';
  is $_->primitiveType, &CSS_EXS, 'ex->primitiveType';
  is $_->getFloatValue, 73, 'ex>getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'ex->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after ex->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after ex->getStringValue dies';
 }
 
-use tests 4; # pixies
+use tests 7; # pixies
 for(CSS::DOM::Value::Primitive->new(type => &CSS_PX, value => 73)) {
  test_isa $_, 'pixel value';
  is $_->primitiveType, &CSS_PX, 'pixel->primitiveType';
  is $_->getFloatValue, 73, 'px->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'pixel->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after pixel->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after pixel->getStringValue dies';
 }
 
-use tests 4; # cm
+use tests 7; # cm
 for(CSS::DOM::Value::Primitive->new(type => &CSS_CM, value => 73)) {
  test_isa $_, 'cm value';
  is $_->primitiveType, &CSS_CM, 'cm->primitiveType';
  is $_->getFloatValue, 73, 'cm->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'cm->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after cm->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after cm->getStringValue dies';
 }
 
-use tests 4; # mm
+use tests 7; # mm
 for(CSS::DOM::Value::Primitive->new(type => &CSS_MM, value => 73)) {
  test_isa $_, 'millimetre value';
  is $_->primitiveType, &CSS_MM, 'mm->primitiveType';
  is $_->getFloatValue, 73, 'mm->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'mm->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after mm->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after mm->getStringValue dies';
 }
 
-use tests 4; # inch
+use tests 7; # inch
 for(CSS::DOM::Value::Primitive->new(type => &CSS_IN, value => 73)) {
  test_isa $_, 'inch value';
  is $_->primitiveType, &CSS_IN, 'inch->primitiveType';
  is $_->getFloatValue, 73, 'inch->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'inch->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after inch->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after inch->getStringValue dies';
 }
 
-use tests 4; # points
+use tests 7; # points
 for(CSS::DOM::Value::Primitive->new(type => &CSS_PT, value => 73)) {
  test_isa $_, 'pointy value';
  is $_->primitiveType, &CSS_PT, 'pointy->primitiveType';
  is $_->getFloatValue, 73, 'pointy->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'pointy->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after pointy->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after pointy->getStringValue dies';
 }
 
-use tests 4; # pica
+use tests 7; # pica
 for(CSS::DOM::Value::Primitive->new(type => &CSS_PC, value => 73)) {
  test_isa $_, 'pica value';
  is $_->primitiveType, &CSS_PC, 'pica->primitiveType';
  is $_->getFloatValue, 73, 'pica->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'pica->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after pica->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after pica->getStringValue dies';
 }
 
-use tests 4; # degrease
+use tests 7; # degrease
 for(CSS::DOM::Value::Primitive->new(type => &CSS_DEG, value => 73)) {
  test_isa $_, 'degree value';
  is $_->primitiveType, &CSS_DEG, 'degree->primitiveType';
  is $_->getFloatValue, 73, 'degree->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'degree->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after degree->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after degree->getStringValue dies';
 }
 
-use tests 4; # radians
+use tests 7; # radians
 for(CSS::DOM::Value::Primitive->new(type => &CSS_RAD, value => 73)) {
  test_isa $_, 'radian value';
  is $_->primitiveType, &CSS_RAD, 'radian->primitiveType';
  is $_->getFloatValue, 73, 'radian->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'radian->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after radian->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after radian->getStringValue dies';
 }
 
-use tests 4; # grad
+use tests 7; # grad
 for(CSS::DOM::Value::Primitive->new(type => &CSS_GRAD, value => 73)) {
  test_isa $_, 'grad value';
  is $_->primitiveType, &CSS_GRAD, 'grad->primitiveType';
  is $_->getFloatValue, 73, 'grad->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'grad->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after grad->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after grad->getStringValue dies';
 }
 
-use tests 4; # seconds
+use tests 7; # seconds
 for(CSS::DOM::Value::Primitive->new(type => &CSS_S, value => 73)) {
  test_isa $_, 'sec. value';
  is $_->primitiveType, &CSS_S, 'sec.->primitiveType';
  is $_->getFloatValue, 73, 'sec.->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'sec.->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after sec.->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after sec.->getStringValue dies';
 }
 
-use tests 4; # ms
+use tests 7; # ms
 for(CSS::DOM::Value::Primitive->new(type => &CSS_MS, value => 73)) {
  test_isa $_, 'ms value';
  is $_->primitiveType, &CSS_MS, 'ms->primitiveType';
  is $_->getFloatValue, 73, 'ms->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'ms->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after ms->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after ms->getStringValue dies';
 }
 
-use tests 4; # hurts
+use tests 7; # hurts
 for(CSS::DOM::Value::Primitive->new(type => &CSS_HZ, value => 73)) {
  test_isa $_, 'hurts value';
  is $_->primitiveType, &CSS_HZ, 'hurts->primitiveType';
  is $_->getFloatValue, 73, 'hurts->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'hurts->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after hurts->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after hurts->getStringValue dies';
 }
 
-use tests 4; # killer hurts
+use tests 7; # killer hurts
 for(CSS::DOM::Value::Primitive->new(type => &CSS_KHZ, value => 73)) {
  test_isa $_, 'killer hurts value';
  is $_->primitiveType, &CSS_KHZ, 'killer hurts->primitiveType';
  is $_->getFloatValue, 73, 'killer hurts->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'killer hurts->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after killer hurts->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after killer hurts->getStringValue dies';
 }
 
-use tests 4; # misc dim
+use tests 7; # misc dim
 for(
  CSS::DOM::Value::Primitive->new(
   type => &CSS_DIMENSION, value => [73, 'things']
@@ -169,9 +254,14 @@ for(
  test_isa $_, 'misc dim value';
  is $_->primitiveType, &CSS_DIMENSION, 'misc dim->primitiveType';
  is $_->getFloatValue, 73, 'misc dim->getFloatValue';
+ ok !eval{ $_->getStringValue;1}, 'misc dim->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after misc dim->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after misc dim->getStringValue dies';
 }
 
-use tests 6; # string
+use tests 7; # string
 for(CSS::DOM::Value::Primitive->new(type => &CSS_STRING, value => 73)) {
  test_isa $_, 'string value';
  is $_->primitiveType, &CSS_STRING, 'string->primitiveType';
@@ -180,9 +270,10 @@ for(CSS::DOM::Value::Primitive->new(type => &CSS_STRING, value => 73)) {
   'class of error after string->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after string->getFloatValue dies';
+ is $_->getStringValue, 73, 'string->getStringValue';
 }
 
-use tests 6; # url
+use tests 7; # url
 for(CSS::DOM::Value::Primitive->new(type => &CSS_URI, value => 73)) {
  test_isa $_, 'uri value';
  is $_->primitiveType, &CSS_URI, 'uri->primitiveType';
@@ -191,9 +282,10 @@ for(CSS::DOM::Value::Primitive->new(type => &CSS_URI, value => 73)) {
   'class of error after uri->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after uri->getFloatValue dies';
+ is $_->getStringValue, 73, 'url->getStringValue';
 }
 
-use tests 6; # identifier
+use tests 7; # identifier
 for(CSS::DOM::Value::Primitive->new(type => &CSS_IDENT, value => 73)) {
  test_isa $_, 'identifier value';
  is $_->primitiveType, &CSS_IDENT, 'identifier->primitiveType';
@@ -202,9 +294,10 @@ for(CSS::DOM::Value::Primitive->new(type => &CSS_IDENT, value => 73)) {
   'class of error after identifier->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after identifier->getFloatValue dies';
+ is $_->getStringValue, 73, 'identifier->getStringValue';
 }
 
-use tests 6; # attr
+use tests 7; # attr
 for(CSS::DOM::Value::Primitive->new(type => &CSS_ATTR, value => 73)) {
  test_isa $_, 'attr value';
  is $_->primitiveType, &CSS_ATTR, 'attr->primitiveType';
@@ -213,9 +306,10 @@ for(CSS::DOM::Value::Primitive->new(type => &CSS_ATTR, value => 73)) {
   'class of error after attr->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after attr->getFloatValue dies';
+ is $_->getStringValue, 73, 'attr->getStringValue';
 }
 
-use tests 6; # counter
+use tests 9; # counter
 for(CSS::DOM::Value::Primitive->new(type => &CSS_COUNTER, value => [73])) {
  test_isa $_, 'counter value';
  is $_->primitiveType, &CSS_COUNTER, 'counter->primitiveType';
@@ -224,9 +318,14 @@ for(CSS::DOM::Value::Primitive->new(type => &CSS_COUNTER, value => [73])) {
   'class of error after counter->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after counter->getFloatValue dies';
+ ok !eval{ $_->getStringValue;1}, 'counter->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after counter->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after counter->getStringValue dies';
 }
 
-use tests 6; # counters
+use tests 9; # counters
 for(CSS::DOM::Value::Primitive->new(
  type => &CSS_COUNTER, value => [73,'breen']
 )) {
@@ -237,22 +336,14 @@ for(CSS::DOM::Value::Primitive->new(
   'class of error after counters->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after counters->getFloatValue dies';
-}
-
-use tests 6; # counters
-for(CSS::DOM::Value::Primitive->new(
- type => &CSS_COUNTER, value => [73,'breen']
-)) {
- test_isa $_, 'counters value';
- is $_->primitiveType, &CSS_COUNTER, 'counters->primitiveType';
- ok !eval{ $_->getFloatValue;1}, 'counters->getFloatValue dies';
+ ok !eval{ $_->getStringValue;1}, 'counters->getStringValue dies';
  isa_ok $@, 'CSS::DOM::Exception',
-  'class of error after counters->getFloatValue dies';
+  'class of error after counters->getStringValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
-  'error code after counters->getFloatValue dies';
+  'error code after counters->getStringValue dies';
 }
 
-use tests 6; # rectangle
+use tests 9; # rectangle
 for(CSS::DOM::Value::Primitive->new(
  type => &CSS_RECT, value => [
      [type => &CSS_PX, value => 20],
@@ -268,9 +359,14 @@ for(CSS::DOM::Value::Primitive->new(
   'class of error after rectangle->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after rectangle->getFloatValue dies';
+ ok !eval{ $_->getStringValue;1}, 'rectangle->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after rectangle->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after rectangle->getStringValue dies';
 }
 
-use tests 6; #bed colour
+use tests 9; #bed colour
 for(CSS::DOM::Value::Primitive->new(
  type => &CSS_RGBCOLOR, value => '#bed',
 )) {
@@ -281,9 +377,14 @@ for(CSS::DOM::Value::Primitive->new(
   'class of error after #bed colour->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after #bed colour->getFloatValue dies';
+ ok !eval{ $_->getStringValue;1}, '#bee colour->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after #bee colour->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after #bee colour->getStringValue dies';
 }
 
-use tests 6; #c0ffee colour
+use tests 9; #c0ffee colour
 for(CSS::DOM::Value::Primitive->new(
  type => &CSS_RGBCOLOR, value => '#c0ffee',
 )) {
@@ -294,9 +395,14 @@ for(CSS::DOM::Value::Primitive->new(
   'class of error after #c0ffee colour->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after #c0ffee colour->getFloatValue dies';
+ ok !eval{ $_->getStringValue;1}, '#c0ffee->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after #c0ffee->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after #c0ffee->getStringValue dies';
 }
 
-use tests 6; # rgb colour
+use tests 9; # rgb colour
 for(CSS::DOM::Value::Primitive->new(
  type => &CSS_RGBCOLOR, value => [ ([type => &CSS_NUMBER, value => 0])x3 ]
 )) {
@@ -307,9 +413,14 @@ for(CSS::DOM::Value::Primitive->new(
   'class of error after rgb->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after rgb->getFloatValue dies';
+ ok !eval{ $_->getStringValue;1}, 'rgb->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after rgb->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after rgb->getStringValue dies';
 }
 
-use tests 6; # rgba colour
+use tests 9; # rgba colour
 for(CSS::DOM::Value::Primitive->new(
  type => &CSS_RGBCOLOR, value => [ ([type => &CSS_NUMBER, value => 0])x4 ]
 )) {
@@ -320,6 +431,11 @@ for(CSS::DOM::Value::Primitive->new(
   'class of error after rgba->getFloatValue dies';
  cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
   'error code after rgba->getFloatValue dies';
+ ok !eval{ $_->getStringValue;1}, 'rgba->getStringValue dies';
+ isa_ok $@, 'CSS::DOM::Exception',
+  'class of error after rgba->getStringValue dies';
+ cmp_ok $@, '==', &CSS::DOM::Exception::INVALID_ACCESS_ERR,
+  'error code after rgba->getStringValue dies';
 }
 
 # ------------------------------------------
@@ -550,4 +666,4 @@ __END__ ~~~ I need to finish converting the rest of these tests
 
 
 # Methods that still need testing:
-# ~~~ getStringValue getCounterValue getRectValue getRGBColorValue
+# ~~~ getCounterValue getRectValue getRGBColorValue

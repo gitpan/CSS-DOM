@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -279,7 +279,7 @@ CSS::DOM - Document Object Model for Cascading Style Sheets
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 This is an alpha version. The API is still subject to change. Many features
 have not been implemented yet (but patches would be welcome :-).
@@ -787,13 +787,18 @@ Expect inconsistency.
 
 To report bugs, please e-mail the author.
 
+=head1 ACKNOWLEDGEMENTS
+
+Thanks to Ville Skyttä and Nicholas Bamber for their contributions.
+
 =head1 AUTHOR & COPYRIGHT
 
 Copyright (C) 2007-10 Father Chrysostomos <sprout [at] cpan
 [dot] org>
 
 This program is free software; you may redistribute it and/or modify
-it under the same terms as perl.
+it under the same terms as perl. The full text of the license can be found
+in the LICENSE file included with this module.
 
 =head1 SEE ALSO
 

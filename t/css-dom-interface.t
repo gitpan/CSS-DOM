@@ -85,3 +85,6 @@ ok exists $CSS::DOM::Interface{CSSPrimitiveValue}{setStringValue},
 use tests 1; # another change in 0.11
 ok exists $CSS::DOM::Interface{CSSStyleDeclaration}{opacity},
  'opacity';
+
+use tests 1; # a change in 0.14
+ok exists $CSS::DOM::Interface{CSSPrimitiveValue}{getStringValue};

@@ -1,6 +1,6 @@
 package CSS::DOM::Util;
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 
@@ -78,7 +78,7 @@ CSS::DOM::Util - Utility functions for dealing with CSS tokens
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 
@@ -99,6 +99,8 @@ This module provides utility functions for dealing with CSS tokens.
 All functions below that take one argument have a C<($)> prototype, so they
 have the same precedence as C<closedir> 
 and C<delete>.
+
+=over
 
 =item escape $string, $chars_to_escape
 
@@ -139,6 +141,8 @@ possibly escaped).
 =item unescape_str $string_token
 
 Returns the value that a CSS string token represents.
+
+=back
 
 =head1 SEE ALSO
 

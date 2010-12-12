@@ -1,7 +1,7 @@
 package CSS::DOM::Interface;
 
 use Exporter 5.57 'import';
-our $VERSION = '0.13';
+our $VERSION = '0.14';
 
 require CSS::DOM::Constants;
 
@@ -11,7 +11,7 @@ CSS::DOM::Interface - A list of CSS::DOM's interface members in machine-readable
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 
@@ -379,7 +379,7 @@ gory details, look at the source code. In fact, here it is:
   		setFloatValue => METHOD | VOID,
   		getFloatValue => METHOD | NUM,
   		setStringValue => METHOD | VOID,
-  #		getStringValue => METHOD | STR,
+  		getStringValue => METHOD | STR,
   #		getCounterValue => METHOD | OBJ,
   #		getRectValue => METHOD | OBJ,
   #		getRGBColorValue => METHOD | OBJ,

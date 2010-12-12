@@ -1,6 +1,6 @@
 package CSS::DOM::PropertyParser;
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -62,6 +62,14 @@ sub clone {
  require Clone;
  return Clone'clone($_[0]);
 }
+
+#  Declare the variables that the re-evals use. Some nasty hacker went and
+# ‘fixed’ run-time re-evals to propagate hints, so now we have to do this
+#  as of perl 5.13.8.
+our(
+ @match,@list,@valtypes,$prepped,$alt_types,@List,%Match,%match,@Match,
+ $tokens,$Self,$Fail
+);
 
 # The interface for match is documented in a POD comment further down
 # (search for the second occurrence of ‘=item match’).
@@ -371,7 +379,7 @@ sub _prep_val {
 
 # Various bits and pieces for _compile_format’s use
 
-our $Fail = qr/(?!)/; # avoid recompiling the same sub-regexp doz-
+$Fail = qr/(?!)/; # avoid recompiling the same sub-regexp doz-
                       # ens of times
 
 # This optionally matches a sign
@@ -768,7 +776,7 @@ CSS::DOM::PropertyParser - Parser for CSS property values
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 

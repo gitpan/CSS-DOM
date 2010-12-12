@@ -1,6 +1,6 @@
 package CSS::DOM::Value;
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -98,7 +98,7 @@ CSS::DOM::Value - CSSValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 
@@ -165,6 +165,8 @@ this to determine how to parse text passed to it.
 The following constants can be imported with C<use CSS::DOM::Value ':all'>.
 They represent the type of CSS value.
 
+=over
+
 =item CSS_INHERIT (0)
 
 =item CSS_PRIMITIVE_VALUE (1)
@@ -172,6 +174,8 @@ They represent the type of CSS value.
 =item CSS_VALUE_LIST (2)
 
 =item CSS_CUSTOM (3)
+
+=back
 
 =head1 SEE ALSO
 

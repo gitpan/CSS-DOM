@@ -1,6 +1,6 @@
 package CSS::DOM::Rule::Media;
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -112,7 +112,7 @@ CSS::DOM::Rule::Media - CSS @media rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 

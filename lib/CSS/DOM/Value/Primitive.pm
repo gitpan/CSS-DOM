@@ -1,6 +1,6 @@
 package CSS::DOM::Value::Primitive;
 
-$VERSION = '0.13';
+$VERSION = '0.14';
 
 use warnings; no warnings qw 'utf8 parenthesis';;
 use strict;
@@ -376,6 +376,18 @@ sub getFloatValue {
 
 *setStringValue = *setFloatValue;
 
+sub getStringValue {
+ my $self = shift;
+
+ my $type = $self->[type];
+ require CSS'DOM'Exception,
+ die new CSS'DOM'Exception INVALID_ACCESS_ERR, "Not a string value"
+  unless $type == CSS_STRING || $type == CSS_URI
+      || $type == CSS_IDENT  || $type == CSS_ATTR;
+
+ "$$self[valu]"
+}
+
 # ------------- Rect interface --------------- #
 
 sub _autoviv_rect_value {
@@ -456,7 +468,7 @@ CSS::DOM::Value::Primitive - CSSPrimitiveValue class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.13
+Version 0.14
 
 =head1 SYNOPSIS
 
@@ -555,7 +567,7 @@ apply to individual elements of a list value.
 
 =item index
 
-The index of this value within a list value (only applies ot elements of a
+The index of this value within a list value (only applies to elements of a
 list, of course).
 
 =item format
@@ -649,6 +661,8 @@ The following constants can be imported with
 C<use CSS::DOM::Value::Primitive ':all'>.
 They represent the type of primitive value.
 
+=over
+
 =item CSS_UNKNOWN    
 
 =item CSS_NUMBER     
@@ -700,6 +714,8 @@ They represent the type of primitive value.
 =item CSS_RECT       
 
 =item CSS_RGBCOLOR   
+
+=back
 
 =head1 SEE ALSO
 

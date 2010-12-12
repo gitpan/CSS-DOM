@@ -22,6 +22,7 @@ lib/CSS/DOM/Value.pm
 lib/CSS/DOM/Value/List.pm
 lib/CSS/DOM/Value/Primitive/colours.pl
 lib/CSS/DOM/Value/Primitive.pm
+LICENSE
 Makefile.PL
 MANIFEST
 README

@@ -1,5 +1,14 @@
 Revision history for CSS::DOM
 
+0.14    12 December, 2010
+      • The full text of the licence is now included in the  distribu-
+        tion.  Thanks to Ville Skyttä for providing  it  (RT  #60770).
+      • A few pod syntax errors have been corrected,  thanks to Nicho-
+        las Bamber (RT #63388).
+      • CSS::DOM::PropertyParser  has been fixed to  work  with  perl
+        5.13.8 and higher.
+      • New getStringValue method of CSS::DOM::Value::Primitive
+
 0.13    22 August, 2010
         Oops.  Fix another problem,  introduced in 0.12.  I forgot to
         add  a  file  to  MANIFEST.  (I  *thought*  I  had  run  make
