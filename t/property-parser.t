@@ -1337,3 +1337,27 @@ use tests 2; # parsing colours
  is $s->agentName, "honey #bee",
   '#colour within paren group and not at the start of the group';
 }
+
+use tests 1; # backtracking with list properties
+{ # This bug,  fixed in 0.15,  was discovered as a result  of  perl  change
+  # 3da9985538. See <http://rt.perl.org/rt3/Ticket/Display.html?id=114628>.
+  # When I wrote  PropertyParser.pm,  I thought that  local @{$whatever}
+  # would  localise  the  entire  contents  of  the  array,  just  as
+  # local ${$whatever}[0]  localises one element.  But it  actually
+  # replaces the array temporarily with a new one,  which cannot
+  # work with references.
+ my $p = new CSS'DOM'PropertyParser;
+ $p->add_property(
+  'foo' => {
+    format => '[(foo)|(foo),]+', # [(foo),?]+ does not trigger the bug
+    list   => 1,
+   },
+ );
+ my $s = CSS'DOM'Style'parse(
+  "foo: foo, foo", 
+   property_parser => $p
+ );
+ use CSS'DOM'Constants 'CSS_VALUE_LIST';
+ is_deeply [map cssText $_, @{$s->getPropertyCSSValue('foo')}],[('foo')x2],
+   'backtracking does not preserve existing captures';
+}

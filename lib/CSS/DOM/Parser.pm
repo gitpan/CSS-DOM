@@ -1,6 +1,6 @@
 package CSS::DOM::Parser;
 
-$VERSION = '0.14';
+$VERSION = '0.15';
 
 use strict; use warnings; no warnings qw 'utf8 parenthesis';
 use re 'taint';
@@ -704,7 +704,7 @@ CSS::DOM::Parser - Parser for CSS::DOM
 
 =head1 VERSION
 
-Version 0.14
+Version 0.15
 
 =head1 DESCRIPTION
 

@@ -1,6 +1,6 @@
 package CSS::DOM::PropertyParser;
 
-$VERSION = '0.14';
+$VERSION = '0.15';
 
 use warnings; no warnings qw 'utf8 parenthesis';
 use strict;
@@ -466,7 +466,7 @@ sub _compile_format {
  # %match holds named captures (sub-properties) directly (no extra locali-
  # sation necessary), which are then copied to %Match afterwards.
  #
- # In cygwin’s perl (see the definition of naughty_perl, above). We work
+ # In perl 5.10.0 (see the definition of naughty_perl, above).  We work
  # around the unreliability of $^N by pushing the current pos onto  @pos
  # before a sub-pattern or capture,  and popping it afterwards.  We  use
  # $pos[-1] instead of pos()-length$^N (for the beginning of the capture).
@@ -674,7 +674,7 @@ sub _compile_format {
      : ')(?{
           (
            local $match[-1][' . pop(@capture_nums) . '],
-           local @{$list[-1]}
+           local $list[-1]
           ) = do {
            my @range
             = '.(naughty_perl ? '$pos[-1]' : 'pos()-length$^N').'...-1+pos;
@@ -687,7 +687,7 @@ sub _compile_format {
              [@$tokens[@range]],[@valtypes[@range]],[@$prepped[@range]],
              pos
            );
-           \@a, @{$list[-1]}, \@a
+           \@a, [@{$list[-1]}, \@a]
           }
         })' . cap_end . ')';
      # We have to intertwine these assignments in this convoluted way
@@ -776,7 +776,7 @@ CSS::DOM::PropertyParser - Parser for CSS property values
 
 =head1 VERSION
 
-Version 0.14
+Version 0.15
 
 =head1 SYNOPSIS
 
@@ -1090,7 +1090,7 @@ Whether the property is inherited.
 =item special_values
 
 A hash ref of values that are replaced with other values (e.g.,
-S<C<< caption => '13px sans-serif' >>>. The keys
+S<C<< caption => '13px sans-serif' >>>.) The keys
 are lowercase identifier names.
 
 This feature only applies to single identifiers. In fact, it exists solely

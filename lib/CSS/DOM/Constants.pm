@@ -1,11 +1,11 @@
 package CSS::DOM::Constants;
 
-$VERSION = '0.14';
+$VERSION = '0.15';
 
 use Exporter 5.57 'import';
 
 my $exception_constants;
-use constant $exception_constants = {
+use constant 1.03 $exception_constants = {
 # DOMException:
 	INDEX_SIZE_ERR              => 1,
 	DOMSTRING_SIZE_ERR          => 2,
@@ -136,7 +136,7 @@ CSS::DOM::Constants - Constants for CSS::DOM
 
 =head1 VERSION
 
-Version 0.14
+Version 0.15
 
 =head1 SYNOPSIS
 

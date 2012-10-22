@@ -1,5 +1,18 @@
 Revision history for CSS::DOM
 
+0.15    21 October, 2012
+      • compute_style  no longer produces an uninitialized warning if
+        the element’s own style attribute has a  property  for  which
+        there is no applicable property with the  same  name  in  the
+        style sheets (RT #79855).
+      • A minor backtracking bug in CSS::DOM::PropertyParser has been
+        fixed.  If a format for a list property can still match after
+        backtracking past a capturing group,  then extra items  (from
+        the pre-backtracking matches)  will end up in the list.  This
+        can happen with  property  formats  like  ‘[(foo) | (foo),]+’.
+        Any such format would  be  more  efficient  when  written  as
+       ‘[(foo),?]+’, which does not exhibit the bug.
+
 0.14    12 December, 2010
       • The full text of the licence is now included in the  distribu-
         tion.  Thanks to Ville Skyttä for providing  it  (RT  #60770).

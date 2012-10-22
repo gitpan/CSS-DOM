@@ -2,7 +2,7 @@ package CSS::DOM;
 
 use 5.008002;
 
-$VERSION = '0.14';
+$VERSION = '0.15';
 
 use   # to keep CPANTS happy :-)
    strict;
@@ -161,6 +161,7 @@ sub compute_style {
 					 /^important\z/i
 					 ? "\4" : "\3"
 					) . "\1\0\0\0";
+					no warnings 'uninitialized';
 					$spec ge $specificity{$p} and
 					  $style->setProperty(
 					   $p, $sty->getPropertyValue($p)
@@ -646,7 +647,7 @@ Array ref of style sheets that the HTML document defines or links to.
 
 =item element
 
-The element
+The element, as an L<HTML::DOM::Element> object.
 
 =item pseudo
 
@@ -793,7 +794,7 @@ Thanks to Ville Skyttä and Nicholas Bamber for their contributions.
 
 =head1 AUTHOR & COPYRIGHT
 
-Copyright (C) 2007-10 Father Chrysostomos <sprout [at] cpan
+Copyright (C) 2007-12 Father Chrysostomos <sprout [at] cpan
 [dot] org>
 
 This program is free software; you may redistribute it and/or modify

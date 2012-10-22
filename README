@@ -1,10 +1,16 @@
-CSS::DOM, version 0.14
+CSS::DOM, version 0.15
 
 This module implements a CSS-specific subset of the interfaces
 described in the W3C DOM specification.
 
 
 RECENT CHANGES
+
+0.015
+-----
+• compute_style  no longer produces an  uninitialized  warning  under
+  some circumstances (RT #79855).
+• A minor backtracking bug in CSS::DOM::PropertyParser has been fixed.
 
 0.014
 -----
@@ -20,12 +26,6 @@ RECENT CHANGES
 -----
 Oops. Fix another problem, introduced in 0.12. I forgot to add a file
 to MANIFEST. (I *thought* I had run make disttest.)
-
-0.012
------
-Fix dependency problem introduced in 0.11.  (I tried  to  remove  the
-dependency on constant::lexical, gave up and reverted my changes, but
-forgot to add it back to Makefile.PL. Oh well.)
 
 
 INSTALLATION
@@ -68,7 +68,7 @@ Or try using man (it's faster, in my experience):
 
 COPYRIGHT AND LICENCE
 
-Copyright (C) 2007-10 Father Chrysostomos
+Copyright (C) 2007-12 Father Chrysostomos
 
 This program is free software; you may redistribute it and/or modify
 it under the same terms as perl. The full text of the license can be

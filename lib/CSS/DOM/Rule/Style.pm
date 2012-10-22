@@ -1,6 +1,6 @@
 package CSS::DOM::Rule::Style;
 
-$VERSION = '0.14';
+$VERSION = '0.15';
 
 use warnings;
 use strict;
@@ -352,7 +352,7 @@ CSS::DOM::Rule::Style - CSS style rule class for CSS::DOM
 
 =head1 VERSION
 
-Version 0.14
+Version 0.15
 
 =head1 SYNOPSIS
 
